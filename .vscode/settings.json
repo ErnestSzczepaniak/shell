@@ -31,6 +31,10 @@
         "memory": "cpp",
         "iosfwd": "cpp",
         "iostream": "cpp",
-        "numeric": "cpp"
+        "numeric": "cpp",
+        "ratio": "cpp",
+        "array": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp"
     }
 }
