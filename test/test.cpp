@@ -36,17 +36,29 @@ using Handler = void (*)(Stream &);
 
 void p1(Stream & stream)
 {
-    auto value = stream.input.get.decimal();
-
-    stream.output.set.decimal(value + 1);
+    if (stream.command.parse.is_present("-c"))
+    {
+        stream.output.set.decimal(10);
+    }
+    else if (stream.command.parse.is_present("-d"))
+    {
+        stream.output.set.text("Option -d provided");
+    }
+    else
+    {
+        stream.error.set.text("no option provided");
+    }   
 }
 
 void p2(Stream & stream)
 {
-    auto flag = stream.input.get.character();
+    auto increment = stream.command.get.decimal();
+
     auto value = stream.input.get.decimal();
 
-    stream.output.set.format("Flag was %c, value was %d", flag, value);
+    if (increment < 100) stream.output.set.format("nee value = %d", value + increment);
+    else stream.error.set.text("Value out of range ...");
+
 }
 
 Handler _candidate(char * name)
@@ -64,10 +76,7 @@ TEST_CASE("test_case_name")
 
     shell.init();
 
-    shell.stream.error.set.text("pizdeczka");
-
-    shell.output(shell.stream.error);
-
+    int index[10];
 
     while(1)
     {
@@ -77,38 +86,56 @@ TEST_CASE("test_case_name")
 
         if (event == Shell::Event::ENTER)
         {
-            stream::Channel input;
-            input = shell.stream.input;
-            shell.stream.input.reset();
-
-            auto count = tools::string::count::word(input.buffer, "|");
+            auto count = tools::string::count::word(shell.stream.command.get.pointer, "|");
 
             for (int i = 0; i < count + 1; i++)
             {
-                auto * name = input.get.word();
+                auto size = tools::string::get::size(shell.stream.command.get.pointer, "|\0");
+
+                if (size <= 0) break;
+
+                shell.stream.command.get.pointer.save();
+
+                auto * name = shell.stream.command.get.word();
 
                 if (auto * candidate = _candidate(name); candidate != nullptr)
                 {
-                    shell.stream.input.set.pointer.reset();
+                    auto span = tools::string::get::size(shell.stream.command.get.pointer, "|\0");
 
-                    if (i < count) shell.stream.input.set.text(input.get.text("|"), "|");
-                    else
-                    {
-                        shell.stream.input.set.text(input.get.text());
-                        shell.stream.input.set.text(" ");
-                    }
-                    
-                    input.get.pointer++;
+                    shell.stream.command.get.pointer.stop(shell.stream.command.get.pointer + span);
+                    shell.stream.command.parse.pointer = shell.stream.command.get.pointer;
 
                     candidate(shell.stream);
 
-                    if (i < count) shell.stream.flush();
+                    if (shell.stream.error.size_actual() > 0)
+                    {
+                        shell.stream.error.set.pointer.reset();
+                        shell.stream.error.set.ansi.special.r().n();
+                        shell.stream.error.set.ansi.color.foreground(255, 0, 0);
+                        shell.stream.error.set.text("on thread ").word(name).text(": ");
+                        shell.stream.error.set.pointer.align_end();
+                        shell.stream.error.set.ansi.special.r().n();
+                    }
+                    else if (i < count) shell.stream.flush();
                 }
-            }
 
-            handler_flush(shell.stream.output.buffer, shell.stream.output.size_actual());
-            // consume stream
-            shell.reset();
+                shell.stream.command.get.pointer.restore();
+                shell.stream.command.get.pointer += (size + 2);
+            }
+            
+            if (shell.stream.error.size_actual() > 0)
+            {
+                handler_flush(shell.stream.error.buffer, shell.stream.error.size_actual());
+
+                shell.reset(true);
+            }
+            else if (shell.stream.output.size_actual() > 0)
+            {
+                handler_flush(shell.stream.output.buffer, shell.stream.output.size_actual());
+
+                shell.reset(true);
+            }
+            else shell.reset(false);
         }
     }
 }

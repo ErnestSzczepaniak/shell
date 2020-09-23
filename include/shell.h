@@ -17,12 +17,12 @@ class Shell
 
     static constexpr auto code_null =           0;
     static constexpr auto code_tab =            9;
-    // static constexpr auto code_enter =          13; //10 for host
+    //static constexpr auto code_enter =          13; //10 for host
     static constexpr auto code_enter =          10; //10 for host
     
     static constexpr auto code_escape =         27;
     static constexpr auto code_space =          32;
-    // static constexpr auto code_backspace =      8; //127 for host
+    //static constexpr auto code_backspace =      8; //127 for host
     static constexpr auto code_backspace =      127; //127 for host
 
     using Handler_flush = void (*)(char * buffer, int size);
@@ -64,7 +64,7 @@ public:
     Shell(Handler_flush flush);
     ~Shell();
 
-    Shell & reset();
+    Shell & reset(bool newline);
     Shell & init();
     Event input(char character);
     Shell & output(stream::Channel & channel);

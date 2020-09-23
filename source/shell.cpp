@@ -12,16 +12,18 @@ Shell::~Shell()
 
 Shell & Shell::init()
 {
-    stream.output.set.ansi.reset().size(stream.output.size_max() + strlen(name) + 2, 100);
+    stream.output.set.ansi.reset().size(150, 50);
 
     _prompt();
 
     return *this;
 }
 
-Shell & Shell::reset()
+Shell & Shell::reset(bool newline)
 {
     stream.reset();
+
+    if (newline) stream.output.set.ansi.special.r().n();
 
     _prompt();
 
@@ -56,17 +58,17 @@ Shell::Event Shell::input(char character)
         }
         else if (character == code_escape)
         {
-            stream.error.set.character(character, "");
+            stream.input.set.character(character, "");
             _mode = Mode::ESCAPE;
         }
     }
     else
     {
-        stream.error.set.character(character, "");
+        stream.input.set.character(character, "");
 
         for (int i = 0; i < sizeof(escape); i++)
         {
-            if (tools::string::compare::difference(stream.error.buffer, (char *) &escape[i][0]) != 0) continue;
+            if (tools::string::compare::difference(stream.input.buffer, (char *) &escape[i][0]) != 0) continue;
 
             result = (Event) i;
 
@@ -81,13 +83,13 @@ Shell::Event Shell::input(char character)
             else if (result == Event::CTRL_RIGHT) _handler_ctrl_right();
 
             _mode = Mode::INPUT;
-            stream.error.reset();
+            stream.input.reset();
         }
 
-        if (stream.error.set.pointer.position() >= 6 && _mode == Mode::ESCAPE)
+        if (stream.input.set.pointer.position() >= 6 && _mode == Mode::ESCAPE)
         {
             _mode = Mode::INPUT;
-            stream.error.reset();
+            stream.input.reset();
         }
     }
     
@@ -126,59 +128,59 @@ void Shell::_handler_enter()
 
 void Shell::_handler_backspace()
 {
-    if (stream.input.set.pointer.position() == 0) return;
+    if (stream.command.set.pointer.position() == 0) return;
 
-    auto offset = stream.input.set.pointer.offset_end();
+    auto offset = stream.command.set.pointer.offset_end();
 
     stream.output.set.ansi.cursor.move.left(1);
-    stream.output.set.text(stream.input.set.pointer, "");
+    stream.output.set.text(stream.command.set.pointer);
     stream.output.set.pointer.align_end();
-    stream.output.set.word("");
+    stream.output.set.character(code_space, "");
     stream.output.set.ansi.cursor.move.left(offset + 1);
 
-    stream.input.set.pointer--;
-    tools::string::trim::left::characters(stream.input.set.pointer, 1);
+    stream.command.set.pointer--;
+    tools::string::trim::left::characters(stream.command.set.pointer, 1);
 }
 
 void Shell::_handler_printable(char character)
 {
-    if (stream.input.size_actual() == stream.input.size_max() - 1) return;
+    if (stream.command.size_actual() == stream.command.size_max() - 1) return;
 
-    stream.input.set.character(character, "");
-    stream.output.set.text(stream.input.set.pointer - 1, "");
+    stream.command.set.character(character, "");
+    stream.output.set.text(stream.command.set.pointer - 1);
 
-    if (stream.input.set.pointer.is_aligned() == false) stream.output.set.ansi.cursor.move.left(stream.input.set.pointer.offset_end());
+    if (stream.command.set.pointer.is_aligned() == false) stream.output.set.ansi.cursor.move.left(stream.input.set.pointer.offset_end());
 }
 
 void Shell::_handler_home()
 {
-    if (stream.input.set.pointer.position() == 0) return;
+    if (stream.command.set.pointer.position() == 0) return;
 
-    stream.output.set.ansi.cursor.move.left(stream.input.set.pointer.position());
-    stream.input.set.pointer.reset();
+    stream.output.set.ansi.cursor.move.left(stream.command.set.pointer.position());
+    stream.command.set.pointer.reset();
 }
 
 void Shell::_handler_end()
 {
-    if (stream.input.set.pointer.is_aligned() == true) return;
+    if (stream.command.set.pointer.is_aligned() == true) return;
 
-    stream.output.set.ansi.cursor.move.right(stream.input.set.pointer.offset_end());
-    stream.input.set.pointer.align_end();
+    stream.output.set.ansi.cursor.move.right(stream.command.set.pointer.offset_end());
+    stream.command.set.pointer.align_end();
 }
 
 void Shell::_handler_left()
 {
-    if (stream.input.set.pointer.position() == 0) return;
+    if (stream.command.set.pointer.position() == 0) return;
 
-    stream.input.set.pointer--;
+    stream.command.set.pointer--;
     stream.output.set.ansi.cursor.move.left(1);  
 }
 
 void Shell::_handler_right()
 {
-    if (stream.input.set.pointer.is_aligned() == true) return;
+    if (stream.command.set.pointer.is_aligned() == true) return;
 
-    stream.input.set.pointer++;
+    stream.command.set.pointer++;
     stream.output.set.ansi.cursor.move.right(1);
 }
 
@@ -194,16 +196,16 @@ void Shell::_handler_down()
 
 void Shell::_handler_delete()
 {
-    if (stream.input.set.pointer.is_aligned() == true) return;
+    if (stream.command.set.pointer.is_aligned() == true) return;
 
-    auto size = stream.input.set.pointer.offset_end();
+    auto size = stream.command.set.pointer.offset_end();
 
-    stream.output.set.word(stream.input.set.pointer + 1);
+    stream.output.set.text(stream.command.set.pointer + 1);
     stream.output.set.pointer.align_end();
-    stream.output.set.word("");
-    stream.output.set.ansi.cursor.move.left(size + 1);
+    stream.output.set.character(code_space, "");
+    stream.output.set.ansi.cursor.move.left(size);
 
-    tools::string::trim::left::characters(stream.input.set.pointer, 1);
+    tools::string::trim::left::characters(stream.command.set.pointer, 1);
 }
 
 void Shell::_handler_ctrl_left()
@@ -267,15 +269,11 @@ void Shell::_flush(stream::Channel & channel, bool reset)
 
 void Shell::_prompt()
 {
+    stream.command.reset();
+
     stream.output.set.ansi.color.foreground(0, 255, 0);
     stream.output.set.format("%s: ", name);
     stream.output.set.ansi.color.foreground(255, 255, 255);
-
-    _flush(stream.output);
-    _flush(stream.input, false);
-
-    if (stream.input.size_actual() > 0)
-        stream.output.set.ansi.cursor.move.column(stream.input.set.pointer.position() + strlen(name) + 3);
 
     _flush(stream.output);
 }
