@@ -45,6 +45,15 @@ void p1(Stream & stream)
             stream.output.push.decimal(i);
         }   
     }
+    else if (stream.command.parse.option("-f").is_equal("R"))
+    {
+        auto * mem = new unsigned char [size];
+
+        for (int i = 0; i < size; i++) mem[i] = i + 1;
+
+        stream.output.push.data(mem, size);
+        delete [] mem;
+    }
     else if (stream.command.parse.option("-f").is_equal("2H"))
     {
         for (int i = 0; i < size; i++)
@@ -143,15 +152,15 @@ TEST_CASE("test_case_name")
                 shell.stream.command.pop.pointer.move(size + 2);
             }
             
-            if (shell.stream.error.size() > 0)
+            if (shell.stream.error.push.pointer.position() > 0)
             {
-                handler_flush(shell.stream.error.buffer, shell.stream.error.size());
+                handler_flush(shell.stream.error.buffer, shell.stream.error.push.pointer.position());
 
                 shell.reset(true);
             }
-            else if (shell.stream.output.size() > 0)
+            else if (shell.stream.output.push.pointer.position() > 0)
             {
-                handler_flush(shell.stream.output.buffer, shell.stream.output.size());
+                handler_flush(shell.stream.output.buffer, shell.stream.output.push.pointer.position() );
 
                 shell.reset(true);
             }
