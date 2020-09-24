@@ -119,16 +119,12 @@ TEST_CASE("test_case_name")
 
                 if (size <= 0) break;
 
-                shell.stream.command.pop.pointer.save();
-
                 auto * name = shell.stream.command.pop.word();
+                auto span = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
 
                 if (auto * candidate = _candidate(name); candidate != nullptr)
                 {
-                    auto span = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
-
-                    shell.stream.command.pop.pointer.stop(shell.stream.command.pop.pointer + span);
-                    shell.stream.command.parse.pointer = shell.stream.command.pop.pointer;
+                    shell.stream.command.parse.pointer.limit(shell.stream.command.pop.pointer + span);
 
                     candidate(shell.stream);
 
@@ -141,15 +137,12 @@ TEST_CASE("test_case_name")
                         shell.stream.error.push.pointer.position(shell.stream.error.size());
                         shell.stream.error.push.ansi.special.r().n();
 
-                        shell.stream.command.pop.pointer.restore();
-                        
                         break;
                     }
                     else if (i < count) shell.stream.flush();
                 }
 
-                shell.stream.command.pop.pointer.restore();
-                shell.stream.command.pop.pointer.move(size + 2);
+                shell.stream.command.pop.pointer.move(span + 2);
             }
             
             if (shell.stream.error.push.pointer.position() > 0)
@@ -160,7 +153,7 @@ TEST_CASE("test_case_name")
             }
             else if (shell.stream.output.push.pointer.position() > 0)
             {
-                handler_flush(shell.stream.output.buffer, shell.stream.output.push.pointer.position() );
+                handler_flush(shell.stream.output.buffer, shell.stream.output.push.pointer.position());
 
                 shell.reset(true);
             }
