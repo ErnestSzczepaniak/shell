@@ -12,7 +12,7 @@ Shell::~Shell()
 
 Shell & Shell::init()
 {
-    stream.output.set.ansi.reset().size(150, 50);
+    stream.output.push.ansi.reset().size(150, 50);
 
     _prompt();
 
@@ -23,7 +23,7 @@ Shell & Shell::reset(bool newline)
 {
     stream.reset();
 
-    if (newline) stream.output.set.ansi.special.r().n();
+    if (newline) stream.output.push.ansi.special.r().n();
 
     _prompt();
 
@@ -58,13 +58,13 @@ Shell::Event Shell::input(char character)
         }
         else if (character == code_escape)
         {
-            stream.input.set.character(character, "");
+            stream.input.push.character(character, "");
             _mode = Mode::ESCAPE;
         }
     }
     else
     {
-        stream.input.set.character(character, "");
+        stream.input.push.character(character, "");
 
         for (int i = 0; i < sizeof(escape); i++)
         {
@@ -86,7 +86,7 @@ Shell::Event Shell::input(char character)
             stream.input.reset();
         }
 
-        if (stream.input.set.pointer.position() >= 6 && _mode == Mode::ESCAPE)
+        if (stream.input.push.pointer.position() >= 6 && _mode == Mode::ESCAPE)
         {
             _mode = Mode::INPUT;
             stream.input.reset();
@@ -98,17 +98,17 @@ Shell::Event Shell::input(char character)
     return result;
 }
 
-Shell & Shell::output(stream::Channel & channel)
+Shell & Shell::output(stream::Stack & stack)
 {
-    if (channel.size_actual() == 0) return *this;
+    if (stack.size() == 0) return *this;
 
-    stream.output.set.ansi.clear.line.entire();
-    stream.output.set.ansi.special.r();
+    stream.output.push.ansi.clear.line.entire();
+    stream.output.push.ansi.special.r();
 
     _flush(stream.output);
-    _flush(channel, false);
+    _flush(stack, false);
 
-    stream.output.set.ansi.special.r().n();
+    stream.output.push.ansi.special.r().n();
     _prompt();
 
     return *this;
@@ -123,65 +123,69 @@ void Shell::_handler_tab()
 
 void Shell::_handler_enter()
 {
-    stream.output.set.ansi.special.r().n();
+    stream.output.push.ansi.special.r().n();
 }
 
 void Shell::_handler_backspace()
 {
-    if (stream.command.set.pointer.position() == 0) return;
+    if (stream.command.push.pointer.position() == 0) return;
 
-    auto offset = stream.command.set.pointer.offset_end();
+    auto offset = stream.command.size() - stream.command.push.pointer.position();
 
-    stream.output.set.ansi.cursor.move.left(1);
-    stream.output.set.text(stream.command.set.pointer);
-    stream.output.set.pointer.align_end();
-    stream.output.set.character(code_space, "");
-    stream.output.set.ansi.cursor.move.left(offset + 1);
+    stream.output.push.ansi.cursor.move.left(1);
+    stream.output.push.text(stream.command.push.pointer);
+    stream.output.push.pointer.position(stream.output.size());
+    stream.output.push.character(code_space, "");
+    stream.output.push.ansi.cursor.move.left(offset + 1);
 
-    stream.command.set.pointer--;
-    tools::string::trim::left::characters(stream.command.set.pointer, 1);
+    stream.command.push.pointer.move(-1);
+    tools::string::trim::left::characters(stream.command.push.pointer, 1);
 }
 
 void Shell::_handler_printable(char character)
 {
-    if (stream.command.size_actual() == stream.command.size_max() - 1) return;
+    if (stream.command.is_full()) return;
 
-    stream.command.set.character(character, "");
-    stream.output.set.text(stream.command.set.pointer - 1);
+    stream.command.push.character(character, "");
+    stream.output.push.text(stream.command.push.pointer - 1);
 
-    if (stream.command.set.pointer.is_aligned() == false) stream.output.set.ansi.cursor.move.left(stream.input.set.pointer.offset_end());
+    if (*stream.command.push.pointer != 0)
+    {
+        stream.output.push.ansi.cursor.move.left(stream.command.size() - stream.command.push.pointer.position()); 
+    }
 }
 
 void Shell::_handler_home()
 {
-    if (stream.command.set.pointer.position() == 0) return;
+    if (stream.command.push.pointer.position() == 0) return;
 
-    stream.output.set.ansi.cursor.move.left(stream.command.set.pointer.position());
-    stream.command.set.pointer.reset();
+    stream.output.push.ansi.cursor.move.left(stream.command.push.pointer.position());
+    stream.command.push.pointer.reset();
 }
 
 void Shell::_handler_end()
 {
-    if (stream.command.set.pointer.is_aligned() == true) return;
+    if (*stream.command.push.pointer == 0) return;
 
-    stream.output.set.ansi.cursor.move.right(stream.command.set.pointer.offset_end());
-    stream.command.set.pointer.align_end();
+    auto size = stream.command.size();
+    stream.output.push.ansi.cursor.move.right(size - stream.command.push.pointer.position());
+    stream.command.push.pointer.position(size);
 }
 
 void Shell::_handler_left()
 {
-    if (stream.command.set.pointer.position() == 0) return;
+    if (stream.command.push.pointer.position() == 0) return;
 
-    stream.command.set.pointer--;
-    stream.output.set.ansi.cursor.move.left(1);  
+    stream.command.push.pointer.move(-1);
+    stream.output.push.ansi.cursor.move.left(1);  
 }
 
 void Shell::_handler_right()
 {
-    if (stream.command.set.pointer.is_aligned() == true) return;
+    if (*stream.command.push.pointer == 0) return;
 
-    stream.command.set.pointer++;
-    stream.output.set.ansi.cursor.move.right(1);
+    stream.command.push.pointer.move(1);
+    stream.output.push.ansi.cursor.move.right(1);
 }
 
 void Shell::_handler_up()
@@ -196,16 +200,16 @@ void Shell::_handler_down()
 
 void Shell::_handler_delete()
 {
-    if (stream.command.set.pointer.is_aligned() == true) return;
+    if (*stream.command.push.pointer == 0) return;
 
-    auto size = stream.command.set.pointer.offset_end();
+    auto offset = stream.command.size() - stream.command.push.pointer.position();
 
-    stream.output.set.text(stream.command.set.pointer + 1);
-    stream.output.set.pointer.align_end();
-    stream.output.set.character(code_space, "");
-    stream.output.set.ansi.cursor.move.left(size);
+    stream.output.push.text(stream.command.push.pointer + 1);
+    stream.output.push.pointer.position(stream.output.size());
+    stream.output.push.character(code_space, "");
+    stream.output.push.ansi.cursor.move.left(offset);
 
-    tools::string::trim::left::characters(stream.command.set.pointer, 1);
+    tools::string::trim::left::characters(stream.command.push.pointer, 1);
 }
 
 void Shell::_handler_ctrl_left()
@@ -259,21 +263,21 @@ void Shell::_handler_ctrl_right()
     // if (shift > 0) stream.output.set.ansi.cursor.move.right(shift);
 }
 
-void Shell::_flush(stream::Channel & channel, bool reset)
+void Shell::_flush(stream::Stack & stack, bool reset)
 {
-    auto size_actual = channel.size_actual();
+    auto size = stack.size();
 
-    if (size_actual > 0) _handler_flush(channel.buffer, size_actual);
-    if (reset == true) channel.reset();
+    if (size > 0) _handler_flush(stack.buffer, size);
+    if (reset == true) stack.reset();
 }
 
 void Shell::_prompt()
 {
     stream.command.reset();
 
-    stream.output.set.ansi.color.foreground(0, 255, 0);
-    stream.output.set.format("%s: ", name);
-    stream.output.set.ansi.color.foreground(255, 255, 255);
+    stream.output.push.ansi.color.foreground(0, 255, 0);
+    stream.output.push.format("%s: ", name);
+    stream.output.push.ansi.color.foreground(255, 255, 255);
 
     _flush(stream.output);
 }

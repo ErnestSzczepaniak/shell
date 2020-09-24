@@ -36,29 +36,45 @@ using Handler = void (*)(Stream &);
 
 void p1(Stream & stream)
 {
-    if (stream.command.parse.is_present("-c"))
+    auto size = stream.command.parse.option("-s").decimal();
+
+    if (stream.command.parse.option("-f").is_equal("D"))
     {
-        stream.output.set.decimal(10);
+        for (int i = 0; i < size; i++)
+        {
+            stream.output.push.decimal(i);
+        }   
     }
-    else if (stream.command.parse.is_present("-d"))
+    else if (stream.command.parse.option("-f").is_equal("2H"))
     {
-        stream.output.set.text("Option -d provided");
+        for (int i = 0; i < size; i++)
+        {
+            stream.output.push.hexadecimal(i, 2);
+        }   
     }
-    else
+    else if (stream.command.parse.option("-f").is_equal("4H"))
     {
-        stream.error.set.text("no option provided");
-    }   
+        for (int i = 0; i < size; i++)
+        {
+            stream.output.push.hexadecimal(i, 4);
+        }   
+    }
+    else if (stream.command.parse.option("-f").is_equal("8H"))
+    {
+        for (int i = 0; i < size; i++)
+        {
+            stream.output.push.hexadecimal(i, 8);
+        }   
+    }
+    else stream.error.push.text("No output specified");
 }
 
 void p2(Stream & stream)
 {
-    auto increment = stream.command.get.decimal();
+    auto size = stream.input.push.pointer.position();
 
-    auto value = stream.input.get.decimal();
-
-    if (increment < 100) stream.output.set.format("nee value = %d", value + increment);
-    else stream.error.set.text("Value out of range ...");
-
+    if (size < 1024) stream.output.push.format("Received %d characters", size);
+    else stream.error.push.text("Buffer overflow ...");
 }
 
 Handler _candidate(char * name)
@@ -86,52 +102,56 @@ TEST_CASE("test_case_name")
 
         if (event == Shell::Event::ENTER)
         {
-            auto count = tools::string::count::word(shell.stream.command.get.pointer, "|");
+            auto count = tools::string::count::word(shell.stream.command.pop.pointer, "|");
 
             for (int i = 0; i < count + 1; i++)
             {
-                auto size = tools::string::get::size(shell.stream.command.get.pointer, "|\0");
+                auto size = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
 
                 if (size <= 0) break;
 
-                shell.stream.command.get.pointer.save();
+                shell.stream.command.pop.pointer.save();
 
-                auto * name = shell.stream.command.get.word();
+                auto * name = shell.stream.command.pop.word();
 
                 if (auto * candidate = _candidate(name); candidate != nullptr)
                 {
-                    auto span = tools::string::get::size(shell.stream.command.get.pointer, "|\0");
+                    auto span = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
 
-                    shell.stream.command.get.pointer.stop(shell.stream.command.get.pointer + span);
-                    shell.stream.command.parse.pointer = shell.stream.command.get.pointer;
+                    shell.stream.command.pop.pointer.stop(shell.stream.command.pop.pointer + span);
+                    shell.stream.command.parse.pointer = shell.stream.command.pop.pointer;
 
                     candidate(shell.stream);
 
-                    if (shell.stream.error.size_actual() > 0)
+                    if (shell.stream.error.size() > 0)
                     {
-                        shell.stream.error.set.pointer.reset();
-                        shell.stream.error.set.ansi.special.r().n();
-                        shell.stream.error.set.ansi.color.foreground(255, 0, 0);
-                        shell.stream.error.set.text("on thread ").word(name).text(": ");
-                        shell.stream.error.set.pointer.align_end();
-                        shell.stream.error.set.ansi.special.r().n();
+                        shell.stream.error.push.pointer.reset();
+                        shell.stream.error.push.ansi.special.r().n();
+                        shell.stream.error.push.ansi.color.foreground(255, 0, 0);
+                        shell.stream.error.push.text("on thread ").word(name).text(": ");
+                        shell.stream.error.push.pointer.position(shell.stream.error.size());
+                        shell.stream.error.push.ansi.special.r().n();
+
+                        shell.stream.command.pop.pointer.restore();
+                        
+                        break;
                     }
                     else if (i < count) shell.stream.flush();
                 }
 
-                shell.stream.command.get.pointer.restore();
-                shell.stream.command.get.pointer += (size + 2);
+                shell.stream.command.pop.pointer.restore();
+                shell.stream.command.pop.pointer.move(size + 2);
             }
             
-            if (shell.stream.error.size_actual() > 0)
+            if (shell.stream.error.size() > 0)
             {
-                handler_flush(shell.stream.error.buffer, shell.stream.error.size_actual());
+                handler_flush(shell.stream.error.buffer, shell.stream.error.size());
 
                 shell.reset(true);
             }
-            else if (shell.stream.output.size_actual() > 0)
+            else if (shell.stream.output.size() > 0)
             {
-                handler_flush(shell.stream.output.buffer, shell.stream.output.size_actual());
+                handler_flush(shell.stream.output.buffer, shell.stream.output.size());
 
                 shell.reset(true);
             }

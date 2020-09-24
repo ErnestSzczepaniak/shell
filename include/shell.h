@@ -67,7 +67,7 @@ public:
     Shell & reset(bool newline);
     Shell & init();
     Event input(char character);
-    Shell & output(stream::Channel & channel);
+    Shell & output(stream::Stack & stack);
 
     Stream stream;
 
@@ -86,7 +86,7 @@ protected:
     void _handler_ctrl_left();
     void _handler_ctrl_right();
 
-    void _flush(stream::Channel & channel, bool reset = true);
+    void _flush(stream::Stack & stack, bool reset = true);
     void _prompt();
 
 private:
