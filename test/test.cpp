@@ -28,13 +28,14 @@ char get()
 
 void handler_flush(char * buffer, int size)
 {
-    printf("%s", buffer);
+    for (int i = 0; i < size; i++) printf("%c", buffer[i]);
+    
     fflush(nullptr);
 }
 
 using Handler = void (*)(Stream &);
 
-void p1(Stream & stream)
+void gen(Stream & stream)
 {
     auto size = stream.command.parse.option("-s").decimal();
 
@@ -78,18 +79,55 @@ void p1(Stream & stream)
     else stream.error.push.text("No output specified");
 }
 
-void p2(Stream & stream)
+void xxor(Stream & stream)
 {
     auto size = stream.input.push.pointer.position();
+    auto value = stream.command.pop.hexadecimal();
 
-    if (size < 1024) stream.output.push.format("Received %d characters", size);
-    else stream.error.push.text("Buffer overflow ...");
+    if (size == 0)
+    {
+        stream.error.push.text("No data provided ...");  
+        return;
+    }
+
+    auto * data = (unsigned char *) stream.input.pop.data(size);
+    for (int i = 0; i < size; i++) data[i] ^= value;
+    stream.output.push.data(data, size);
+}
+
+void echo(Stream & stream)
+{
+    auto * w = stream.command.pop.text();
+    stream.output.push.text(w);
+}
+
+void rnd(Stream & stream)
+{
+    if (stream.command.parse.option("-h").is_present())
+    {
+        stream.output.push.text("Usage:").ansi.special.r().n();
+        stream.output.push.text("\trand [number]").ansi.special.r().n();
+        stream.output.push.text("Options:").ansi.special.r().n();
+        stream.output.push.text("\t-h\tprint this summary");
+    }
+
+    if (stream.command.push.pointer.position() == 0)
+    {
+        stream.error.push.text("Please specify number of values to generate ...");
+        return;
+    }
+
+    auto size = stream.command.pop.decimal();
+
+    for (int i = 0; i < size; i++) stream.output.push.decimal(rand() % 255, "");   
 }
 
 Handler _candidate(char * name)
 {
-    if (strncmp(name, "p1", strlen("p1")) == 0) return p1;
-    else if (strncmp(name, "p2", strlen("p2")) == 0) return p2;
+    if (strncmp(name, "gen", strlen("gen")) == 0) return gen;
+    else if (strncmp(name, "xor", strlen("xor")) == 0) return xxor;
+    else if (strncmp(name, "echo", strlen("echo")) == 0) return echo;
+    else if (strncmp(name, "rand", strlen("rand")) == 0) return rnd;
     return nullptr;
 }
 
@@ -98,10 +136,9 @@ TEST_CASE("test_case_name")
     enableRawMode();
 
     Shell shell(handler_flush);
+    Stream user;
 
     shell.init();
-
-    int index[10];
 
     while(1)
     {
@@ -115,45 +152,49 @@ TEST_CASE("test_case_name")
 
             for (int i = 0; i < count + 1; i++)
             {
-                auto size = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
-
-                if (size <= 0) break;
+                if (shell.stream.command.find.offset_to("|\0") <= 0) break;
 
                 auto * name = shell.stream.command.pop.word();
-                auto span = tools::string::get::size(shell.stream.command.pop.pointer, "|\0");
 
                 if (auto * candidate = _candidate(name); candidate != nullptr)
                 {
-                    shell.stream.command.parse.pointer.limit(shell.stream.command.pop.pointer + span);
+                    user.command.push.text(shell.stream.command.pop.text("|\0"), "|\0");
+                    shell.stream.command.pop.pointer.move(1);
 
-                    candidate(shell.stream);
+                    candidate(user);
 
-                    if (shell.stream.error.size() > 0)
-                    {
-                        shell.stream.error.push.pointer.reset();
-                        shell.stream.error.push.ansi.special.r().n();
-                        shell.stream.error.push.ansi.color.foreground(255, 0, 0);
-                        shell.stream.error.push.text("on thread ").word(name).text(": ");
-                        shell.stream.error.push.pointer.position(shell.stream.error.size());
-                        shell.stream.error.push.ansi.special.r().n();
+                    user.command.reset();
 
-                        break;
-                    }
-                    else if (i < count) shell.stream.flush();
+                    if (user.error.push.pointer.position() > 0) break;
+                    else if (i < count) user.flush();
+                    else if (i == count) user.input.reset();
                 }
-
-                shell.stream.command.pop.pointer.move(span + 2);
+                else
+                {
+                    user.error.push.format("Command %s unknown...", name);
+                    break;
+                }
             }
             
-            if (shell.stream.error.push.pointer.position() > 0)
+            if (user.error.push.pointer.position() > 0)
             {
-                handler_flush(shell.stream.error.buffer, shell.stream.error.push.pointer.position());
+                user.error.push.pointer.reset();
+                user.error.push.ansi.special.r().n();
+                user.error.push.ansi.color.foreground(255, 0, 0);
+                user.error.push.pointer.position(user.error.size_actual());
+                user.error.push.ansi.special.r().n();
+
+                handler_flush(user.error.buffer, user.error.push.pointer.position());
+
+                user.error.reset();
 
                 shell.reset(true);
             }
-            else if (shell.stream.output.push.pointer.position() > 0)
+            else if (user.output.push.pointer.position() > 0)
             {
-                handler_flush(shell.stream.output.buffer, shell.stream.output.push.pointer.position());
+                handler_flush(user.output.buffer, user.output.push.pointer.position());
+
+                user.output.reset();
 
                 shell.reset(true);
             }

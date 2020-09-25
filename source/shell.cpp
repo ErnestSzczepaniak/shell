@@ -93,25 +93,9 @@ Shell::Event Shell::input(char character)
         }
     }
     
-    _flush(stream.output);
+    _flush();
 
     return result;
-}
-
-Shell & Shell::output(stream::Stack & stack)
-{
-    if (stack.size() == 0) return *this;
-
-    stream.output.push.ansi.clear.line.entire();
-    stream.output.push.ansi.special.r();
-
-    _flush(stream.output);
-    _flush(stack, false);
-
-    stream.output.push.ansi.special.r().n();
-    _prompt();
-
-    return *this;
 }
 
 /* ---------------------------------------------| info |--------------------------------------------- */
@@ -130,11 +114,11 @@ void Shell::_handler_backspace()
 {
     if (stream.command.push.pointer.position() == 0) return;
 
-    auto offset = stream.command.size() - stream.command.push.pointer.position();
+    auto offset = stream.command.size_actual() - stream.command.push.pointer.position();
 
     stream.output.push.ansi.cursor.move.left(1);
     stream.output.push.text(stream.command.push.pointer);
-    stream.output.push.pointer.position(stream.output.size());
+    stream.output.push.pointer.position(stream.output.size_actual());
     stream.output.push.character(code_space, "");
     stream.output.push.ansi.cursor.move.left(offset + 1);
 
@@ -151,7 +135,7 @@ void Shell::_handler_printable(char character)
 
     if (*stream.command.push.pointer != 0)
     {
-        stream.output.push.ansi.cursor.move.left(stream.command.size() - stream.command.push.pointer.position()); 
+        stream.output.push.ansi.cursor.move.left(stream.command.size_actual() - stream.command.push.pointer.position()); 
     }
 }
 
@@ -167,7 +151,7 @@ void Shell::_handler_end()
 {
     if (*stream.command.push.pointer == 0) return;
 
-    auto size = stream.command.size();
+    auto size = stream.command.size_actual();
     stream.output.push.ansi.cursor.move.right(size - stream.command.push.pointer.position());
     stream.command.push.pointer.position(size);
 }
@@ -202,10 +186,10 @@ void Shell::_handler_delete()
 {
     if (*stream.command.push.pointer == 0) return;
 
-    auto offset = stream.command.size() - stream.command.push.pointer.position();
+    auto offset = stream.command.size_actual() - stream.command.push.pointer.position();
 
     stream.output.push.text(stream.command.push.pointer + 1);
-    stream.output.push.pointer.position(stream.output.size());
+    stream.output.push.pointer.position(stream.output.size_actual());
     stream.output.push.character(code_space, "");
     stream.output.push.ansi.cursor.move.left(offset);
 
@@ -263,12 +247,12 @@ void Shell::_handler_ctrl_right()
     // if (shift > 0) stream.output.set.ansi.cursor.move.right(shift);
 }
 
-void Shell::_flush(stream::Stack & stack, bool reset)
+void Shell::_flush()
 {
-    auto size = stack.size();
+    auto size_actual = stream.output.size_actual();
 
-    if (size > 0) _handler_flush(stack.buffer, size);
-    if (reset == true) stack.reset();
+    _handler_flush(stream.output.buffer, size_actual);
+    stream.output.reset();
 }
 
 void Shell::_prompt()
@@ -279,5 +263,5 @@ void Shell::_prompt()
     stream.output.push.format("%s: ", name);
     stream.output.push.ansi.color.foreground(255, 255, 255);
 
-    _flush(stream.output);
+    _flush();
 }
