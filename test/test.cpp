@@ -140,65 +140,70 @@ TEST_CASE("test_case_name")
 
     shell.init();
 
+    char * pipe = "|";
+    char * pipe_or_null = "|\0";
+
     while(1)
     {
         auto character = get();
 
         auto event = shell.input(character);
 
-        if (event == Shell::Event::ENTER)
+        if (event != Shell::Event::ENTER) continue;
+
+        if (shell.stream.command.push.pointer.position() == 0)
         {
-            auto count = tools::string::count::word(shell.stream.command.pop.pointer, "|");
-
-            for (int i = 0; i < count + 1; i++)
-            {
-                if (shell.stream.command.find.offset_to("|\0") <= 0) break;
-
-                auto * name = shell.stream.command.pop.word();
-
-                if (auto * candidate = _candidate(name); candidate != nullptr)
-                {
-                    user.command.push.text(shell.stream.command.pop.text("|\0"), "|\0");
-                    shell.stream.command.pop.pointer.move(1);
-
-                    candidate(user);
-
-                    user.command.reset();
-
-                    if (user.error.push.pointer.position() > 0) break;
-                    else if (i < count) user.flush();
-                    else if (i == count) user.input.reset();
-                }
-                else
-                {
-                    user.error.push.format("Command %s unknown...", name);
-                    break;
-                }
-            }
-            
-            if (user.error.push.pointer.position() > 0)
-            {
-                user.error.push.pointer.reset();
-                user.error.push.ansi.special.r().n();
-                user.error.push.ansi.color.foreground(255, 0, 0);
-                user.error.push.pointer.position(user.error.size_actual());
-                user.error.push.ansi.special.r().n();
-
-                handler_flush(user.error.buffer, user.error.push.pointer.position());
-
-                user.error.reset();
-
-                shell.reset(true);
-            }
-            else if (user.output.push.pointer.position() > 0)
-            {
-                handler_flush(user.output.buffer, user.output.push.pointer.position());
-
-                user.output.reset();
-
-                shell.reset(true);
-            }
-            else shell.reset(false);
+            shell.reset(false);
+            continue;
         }
+
+        auto count = shell.stream.command.info.count(pipe);
+
+        for (int i = 0; i < count + 1; i++)
+        {
+            auto * name = shell.stream.command.pop.word();
+
+            if (auto * candidate = _candidate(name); candidate != nullptr)
+            {
+                user.command.push.text(shell.stream.command.pop.text(pipe_or_null), pipe_or_null);
+                shell.stream.command.pop.pointer.move(1);
+
+                candidate(user);
+
+                user.command.reset();
+
+                if (user.error.push.pointer.position() > 0) break;
+                else if (i < count) user.flush();
+                else if (i == count) user.input.reset();
+            }
+            else
+            {
+                user.error.push.format("Command '%s' not found ...", name);
+                break;
+            }
+        }
+        
+        if (user.error.push.pointer.position() > 0)
+        {
+            user.error.push.pointer.reset();
+            user.error.push.ansi.special.r().n();
+            user.error.push.pointer.position(user.error.size_actual());
+            user.error.push.ansi.special.r().n();
+
+            handler_flush(user.error.buffer, user.error.push.pointer.position());
+
+            user.error.reset();
+
+            shell.reset(true);
+        }
+        else if (user.output.push.pointer.position() > 0)
+        {
+            handler_flush(user.output.buffer, user.output.push.pointer.position());
+
+            user.output.reset();
+
+            shell.reset(true);
+        }
+        else shell.reset(false);
     }
 }
