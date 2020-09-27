@@ -26,15 +26,6 @@ char get()
     return temp;
 }
 
-void handler_flush(char * buffer, int size)
-{
-    for (int i = 0; i < size; i++) printf("%c", buffer[i]);
-    
-    fflush(nullptr);
-}
-
-using Handler = void (*)(Stream &);
-
 void gen(Stream & stream)
 {
     auto size = stream.command.parse.option("-s").decimal();
@@ -122,26 +113,37 @@ void rnd(Stream & stream)
     for (int i = 0; i < size; i++) stream.output.push.decimal(rand() % 255, "");   
 }
 
-Handler _candidate(char * name)
+/* ---------------------------------------------| handler |--------------------------------------------- */
+
+void handler_flush(char * buffer, int size)
 {
-    if (strncmp(name, "gen", strlen("gen")) == 0) return gen;
-    else if (strncmp(name, "xor", strlen("xor")) == 0) return xxor;
-    else if (strncmp(name, "echo", strlen("echo")) == 0) return echo;
-    else if (strncmp(name, "rand", strlen("rand")) == 0) return rnd;
-    return nullptr;
+    for (int i = 0; i < size; i++) printf("%c", buffer[i]);
+    
+    fflush(nullptr);
 }
+
+void handler_execute(char * name, Stream & stream)
+{
+    if (strncmp(name, "gen", strlen("gen")) == 0) gen(stream);
+    else if (strncmp(name, "xor", strlen("xor")) == 0) xxor(stream);
+    else if (strncmp(name, "echo", strlen("echo")) == 0) echo(stream);
+    else if (strncmp(name, "rand", strlen("rand")) == 0) rnd(stream);
+}
+
+/* ---------------------------------------------| test |--------------------------------------------- */
+
+char * table[]
+{
+    "gen", "xor", "echo", "rand"
+};
 
 TEST_CASE("test_case_name")
 { 
     enableRawMode();
 
-    Shell shell(handler_flush);
-    Stream user;
-
+    Shell shell(handler_flush, handler_execute, table, 4);
+    
     shell.init();
-
-    char * pipe = "|";
-    char * pipe_or_null = "|\0";
 
     while(1)
     {
@@ -149,61 +151,5 @@ TEST_CASE("test_case_name")
 
         auto event = shell.input(character);
 
-        if (event != Shell::Event::ENTER) continue;
-
-        if (shell.stream.command.push.pointer.position() == 0)
-        {
-            shell.reset(false);
-            continue;
-        }
-
-        auto count = shell.stream.command.info.count(pipe);
-
-        for (int i = 0; i < count + 1; i++)
-        {
-            auto * name = shell.stream.command.pop.word();
-
-            if (auto * candidate = _candidate(name); candidate != nullptr)
-            {
-                user.command.push.text(shell.stream.command.pop.text(pipe_or_null), pipe_or_null);
-                shell.stream.command.pop.pointer.move(1);
-
-                candidate(user);
-
-                user.command.reset();
-
-                if (user.error.push.pointer.position() > 0) break;
-                else if (i < count) user.flush();
-                else if (i == count) user.input.reset();
-            }
-            else
-            {
-                user.error.push.format("Command '%s' not found ...", name);
-                break;
-            }
-        }
-        
-        if (user.error.push.pointer.position() > 0)
-        {
-            user.error.push.pointer.reset();
-            user.error.push.ansi.special.r().n();
-            user.error.push.pointer.position(user.error.size_actual());
-            user.error.push.ansi.special.r().n();
-
-            handler_flush(user.error.buffer, user.error.push.pointer.position());
-
-            user.error.reset();
-
-            shell.reset(true);
-        }
-        else if (user.output.push.pointer.position() > 0)
-        {
-            handler_flush(user.output.buffer, user.output.push.pointer.position());
-
-            user.output.reset();
-
-            shell.reset(true);
-        }
-        else shell.reset(false);
     }
 }

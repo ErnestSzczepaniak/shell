@@ -25,7 +25,12 @@ class Shell
     //static constexpr auto code_backspace =      8; //127 for host
     static constexpr auto code_backspace =      127; //127 for host
 
+    static constexpr char * pipe =              "|";
+    static constexpr char * pipe_or_null =      "|\0";
+
     using Handler_flush = void (*)(char * buffer, int size);
+    using Handler_execute = void (*)(char * name, Stream & stream);
+
     enum class Mode {INPUT, ESCAPE};
 
     static constexpr char escape[][8] = 
@@ -42,33 +47,11 @@ class Shell
     };
 
 public:
-    enum class Event : unsigned char
-    {
-        HOME,
-        END,
-        LEFT,
-        RIGHT,
-        UP,
-        DOWN,
-        DELETE,
-        CTRL_LEFT,
-        CTRL_RIGHT,
-        TAB,
-        ENTER,
-        BACKSPACE,
-        PRINTABLE,
-        NONE,
-        FULL
-    }; /* enum: Event */
-
-    Shell(Handler_flush flush);
+    Shell(Handler_flush flush, Handler_execute execute, char ** table, int size);
     ~Shell();
 
-    Shell & reset(bool newline);
     Shell & init();
-    Event input(char character);
-
-    Stream stream;
+    Shell & input(char character);
 
 protected:
     void _handler_tab();
@@ -85,12 +68,21 @@ protected:
     void _handler_ctrl_left();
     void _handler_ctrl_right();
 
-    void _flush();
+    void _flush_system();
+    void _flush_user();
     void _prompt();
 
+    bool _program_known(char * name);
+
 private:
+    Stream _system;
+    Stream _user;
+
     Mode _mode = Mode::INPUT;
     Handler_flush _handler_flush = nullptr;
+    Handler_execute _handler_execute = nullptr;
+    char ** _program_table = nullptr;
+    int _program_number;
 
 }; /* class: Shell */
 
