@@ -1,11 +1,9 @@
 #include "shell.h"
 
-Shell::Shell(Handler_flush flush, Handler_execute execute, char ** table, int number) 
+Shell::Shell(Handler_flush flush, Handler_execute execute) 
 :
 _handler_flush(flush),
-_handler_execute(execute),
-_program_table(table),
-_program_number(number)
+_handler_execute(execute)
 {
 
 }
@@ -78,7 +76,52 @@ Shell & Shell::input(char character)
 
 void Shell::_handler_tab()
 {
+    if (_system.command.push.pointer.position() == 0) return;
+    if (*_system.command.push.pointer != 0) return;
 
+    auto count = _system.command.info.words();
+
+    if (count == 1)
+    {
+        _system.command.push.pointer.save();
+
+        _handler_ctrl_left(false);
+        
+        int match[size_program];
+
+        for (int i = 0; i < _program_number; i++) match[i] = _complete_match(_system.command.push.pointer, _program[i].name());
+
+        auto [max, pos] = _complete_max(match, _program_number);
+
+        _system.command.push.pointer.restore();
+
+        if (max == 0) return;
+        else if (max < _system.command.push.pointer.position()) return;
+
+        if (_complete_repetition(match, _program_number, max) == 1)
+        {
+            _system.command.push.format("%s ", _program[pos].name() + max);
+            _system.output.push.format("%s ", _program[pos].name() + max);
+        }
+        else
+        {
+            for (int i = 0; i < _program_number; i++)
+            {
+                if (match[i] == max)
+                {
+                    _system.output.push.ansi.special.r().n();
+                    _system.output.push.text(_program[i].name());
+                }
+            }   
+
+            _system.output.push.ansi.special.r().n();
+            _prompt();
+        }
+    }
+    else if (count > 1)
+    {
+
+    }
 }
 
 void Shell::_handler_enter()
@@ -107,12 +150,18 @@ void Shell::_handler_enter()
 
             _user.command.clear();
 
-            if (_user.error.push.pointer.position() > 0) break;
+            if (_user.error.push.pointer.position() > 0)
+            {
+                _user.error.push.pointer.reset();
+                _user.error.push.format("%s: ", name);
+                _user.error.push.pointer.position(_user.error.size_actual());
+                break;
+            }
             else if (i < count) _user.flush();
         }
         else
         {
-            _user.error.push.text("Command '").text(name, " ").text("' not found...");
+            _user.error.push.text("Command '").text(name, " ").text("' not found ...");
             break;
         }
     }
@@ -209,55 +258,54 @@ void Shell::_handler_delete()
     tools::string::trim::left::characters(_system.command.push.pointer, 1);
 }
 
-void Shell::_handler_ctrl_left()
+void Shell::_handler_ctrl_left(bool output)
 {
-    // if (_system.input.pointer.position() == 0) return;
+    if (_system.command.push.pointer.position() == 0) return;
 
-    // auto initial = _system.input.pointer.position();
-    // auto iterations = _system.input.offset_home();
+    auto position = _system.command.push.pointer.position();
 
-    // for (int i = 0; i < iterations; i++)
-    // {
-    //     if (*_system.input.pointer != code_null && *_system.input.pointer != code_space)
-    //     {
-    //         if (*(_system.input.pointer - 1) == code_space && i > 0) break;
-    //         else _system.input.pointer--;
-    //     }
-    //     else _system.input.pointer--;
-    // }
+    for (int i = 0; i < position; i++)
+    {
+        if (*_system.command.push.pointer != code_null && *_system.command.push.pointer != code_space)
+        {
+            if (*(_system.command.push.pointer - 1) == code_space && i > 0) break;
+            else _system.command.push.pointer.move(-1);
+        }
+        else _system.command.push.pointer.move(-1);
+    }
 
-    // auto shift = initial - _system.input.pointer.position();
+    auto shift = position - _system.command.push.pointer.position();
 
-    // if (shift > 0) _system.output.set.ansi.cursor.move.left(shift);
+    if (shift > 0 && output) _system.output.push.ansi.cursor.move.left(shift);
 }
 
-void Shell::_handler_ctrl_right()
+void Shell::_handler_ctrl_right(bool output)
 {
-    // if (_system.input.is_aligned() == true) return;
+    if (*_system.command.push.pointer == 0) return;
 
-    // auto initial = _system.input.pointer.position();
-    // auto iterations = _system.input.offset_end();
+    auto initial = _system.command.push.pointer.position();
+    auto iterations = _system.command.size_actual() - initial;
 
-    // for (int i = 0; i < iterations; i++)
-    // {
-    //     if (*_system.input.pointer != code_null && *_system.input.pointer != code_space)
-    //     {
-    //         if (*(_system.input.pointer + 1) == code_null || *(_system.input.pointer + 1) == code_space)
-    //         {
-    //             if (i > 0)
-    //             {
-    //                 _system.input.pointer++;
-    //                 break;
-    //             }
-    //         }
-    //         else _system.input.pointer++;
-    //     }
-    //     else _system.input.pointer++;
-    // }
+    for (int i = 0; i < iterations; i++)
+    {
+        if (*_system.command.push.pointer != code_null && *_system.command.push.pointer != code_space)
+        {
+            if (*(_system.command.push.pointer + 1) == code_null || *(_system.command.push.pointer + 1) == code_space)
+            {
+                if (i > 0)
+                {
+                    _system.command.push.pointer.move(1);
+                    break;
+                }
+            }
+            else _system.command.push.pointer.move(1);
+        }
+        else _system.command.push.pointer.move(1);
+    }
 
-    // auto shift = _system.input.pointer.position() - initial;
+    auto shift = _system.command.push.pointer.position() - initial;
 
-    // if (shift > 0) _system.output.set.ansi.cursor.move.right(shift);
+    if (shift > 0 && output) _system.output.push.ansi.cursor.move.right(shift);
 }
 
 void Shell::_flush_system()
@@ -295,14 +343,55 @@ void Shell::_prompt()
     _system.output.push.ansi.color.foreground(0, 255, 0);
     _system.output.push.format("%s: ", name);
     _system.output.push.ansi.color.foreground(255, 255, 255);
+    _system.output.push.text(_system.command.buffer);
 }
 
 bool Shell::_program_known(char * name)
 {
     for (int i = 0; i < _program_number; i++)
     {
-        if (tools::string::compare::equality(name, _program_table[i], " ")) return true;
+        if (tools::string::compare::equality(name, _program[i].name(), " ")) return true;
     }
     
     return false;
+}
+
+int Shell::_complete_match(char * hint, char * element)
+{
+    auto size = strlen(element);
+    auto count = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (hint[i] == element[i]) count++;
+        else break;
+    }
+    return count;
+}
+
+Shell::Max Shell::_complete_max(int * match, int size)
+{
+    auto max = 0;
+    auto pos = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (match[i] > max)
+        {
+            max = match[i];
+            pos = i;
+        }
+    }
+    return {max, pos};
+}
+
+int Shell::_complete_repetition(int * match, int size, int max)
+{
+    auto count = 0;
+
+    for (int i = 0; i < size; i++)
+    {
+        if (match[i] == max) count++;
+    }
+    return count;
 }

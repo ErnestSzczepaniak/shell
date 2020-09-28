@@ -134,15 +134,27 @@ void handler_execute(char * name, Stream & stream)
 
 char * table[]
 {
-    "gen", "xor", "echo", "rand"
+    "gen", "xor", "echo", "rand", "git"
 };
+
+char * keywords_gen[] {"aasd", "asd"};
+char * keywords_xor[] {"aasd", "asd"};
+char * keywords_echo[] {"aasd", "asd"};
+char * keywords_rand[] {"aasd", "asd"};
+char * keywords_git[] {"push", "pull"};
 
 TEST_CASE("test_case_name")
 { 
     enableRawMode();
 
-    Shell shell(handler_flush, handler_execute, table, 4);
+    Shell shell(handler_flush, handler_execute);
     
+    shell.add("gen", keywords_gen);
+    shell.add("xor", keywords_xor);
+    shell.add("echo", keywords_echo);
+    shell.add("rand", keywords_rand);
+    shell.add("git", keywords_git);
+
     shell.init();
 
     while(1)

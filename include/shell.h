@@ -10,6 +10,7 @@
 **/
 
 #include "stream.h"
+#include "shell_program.h"
 
 class Shell
 {
@@ -28,10 +29,14 @@ class Shell
     static constexpr char * pipe =              "|";
     static constexpr char * pipe_or_null =      "|\0";
 
+    static constexpr auto size_program =        128;   
+
     using Handler_flush = void (*)(char * buffer, int size);
     using Handler_execute = void (*)(char * name, Stream & stream);
 
     enum class Mode {INPUT, ESCAPE};
+
+    struct Max {int max; int position;};
 
     static constexpr char escape[][8] = 
     {
@@ -47,11 +52,12 @@ class Shell
     };
 
 public:
-    Shell(Handler_flush flush, Handler_execute execute, char ** table, int size);
+    Shell(Handler_flush flush, Handler_execute execute);
     ~Shell();
 
     Shell & init();
     Shell & input(char character);
+    template<int size> Shell & add(char * name, char * (&keywords)[size]);
 
 protected:
     void _handler_tab();
@@ -65,14 +71,18 @@ protected:
     void _handler_up();
     void _handler_down();
     void _handler_delete();
-    void _handler_ctrl_left();
-    void _handler_ctrl_right();
+    void _handler_ctrl_left(bool output = true);
+    void _handler_ctrl_right(bool output = true);
 
     void _flush_system();
     void _flush_user();
     void _prompt();
 
     bool _program_known(char * name);
+
+    int _complete_match(char * possible, char * element);
+    Max _complete_max(int * match, int size);
+    int _complete_repetition(int * match, int size, int max);
 
 private:
     Stream _system;
@@ -81,10 +91,24 @@ private:
     Mode _mode = Mode::INPUT;
     Handler_flush _handler_flush = nullptr;
     Handler_execute _handler_execute = nullptr;
-    char ** _program_table = nullptr;
+
+    shell::Program _program[size_program];
     int _program_number;
 
 }; /* class: Shell */
+
+
+template<int size> 
+Shell & Shell::add(char * name, char * (&keywords)[size])
+{
+    _program[_program_number].name(name);
+    _program[_program_number].keywords(&keywords[0]);
+    _program[_program_number].size_keywords(size);
+
+    _program_number++;
+
+    return *this;
+}
 
 
 #endif /* define: shell_h */
