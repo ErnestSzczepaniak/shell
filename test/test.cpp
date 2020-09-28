@@ -122,38 +122,50 @@ void handler_flush(char * buffer, int size)
     fflush(nullptr);
 }
 
-void handler_execute(char * name, Stream & stream)
+bool handler_call(char * name, Stream & stream)
 {
-    if (strncmp(name, "gen", strlen("gen")) == 0) gen(stream);
-    else if (strncmp(name, "xor", strlen("xor")) == 0) xxor(stream);
-    else if (strncmp(name, "echo", strlen("echo")) == 0) echo(stream);
-    else if (strncmp(name, "rand", strlen("rand")) == 0) rnd(stream);
+    if (strncmp(name, "gen", strlen("gen")) == 0)
+    {
+        gen(stream);
+        return true;
+    }
+    else if (strncmp(name, "xor", strlen("xor")) == 0)
+    {
+        xxor(stream);
+        return true;
+    }
+    else if (strncmp(name, "echo", strlen("echo")) == 0)
+    {
+        echo(stream);
+        return true;
+    }
+    else if (strncmp(name, "rand", strlen("rand")) == 0)
+    {
+        rnd(stream);
+        return true;
+    }
+    
+    return false;
 }
 
 /* ---------------------------------------------| test |--------------------------------------------- */
 
-char * table[]
-{
-    "gen", "xor", "echo", "rand", "git"
-};
+// char * table[]
+// {
+//     "gen", "xor", "echo", "rand", "git"
+// };
 
-char * keywords_gen[] {"aasd", "asd"};
-char * keywords_xor[] {"aasd", "asd"};
-char * keywords_echo[] {"aasd", "asd"};
-char * keywords_rand[] {"aasd", "asd"};
-char * keywords_git[] {"push", "pull"};
+// char * keywords_gen[] {"aasd", "asd"};
+// char * keywords_xor[] {"aasd", "asd"};
+// char * keywords_echo[] {"aasd", "asd"};
+// char * keywords_rand[] {"aasd", "asd"};
+// char * keywords_git[] {"push", "pull"};
 
 TEST_CASE("test_case_name")
 { 
     enableRawMode();
 
-    Shell shell(handler_flush, handler_execute);
-    
-    shell.add("gen", keywords_gen);
-    shell.add("xor", keywords_xor);
-    shell.add("echo", keywords_echo);
-    shell.add("rand", keywords_rand);
-    shell.add("git", keywords_git);
+    Shell shell(handler_flush, handler_call);
 
     shell.init();
 
