@@ -163,7 +163,7 @@ char * handler_program(int index)
     return nullptr;
 }
 
-char * keyword_gen[] = {"number", "ascii"};
+char * keyword_gen[] = {"number", "ascii", "-f", "-s"};
 char * keyword_xor[] = {"rand"};
 char * keyword_echo[] = {"lorem"};
 char * keyword_rand[] = {"ascii", "decimal", "data"};

@@ -35,6 +35,8 @@ bool Hint::tab()
 
         auto [max, pos, duplicate] = _find_max(program_number);
 
+        if (max == 0) return true;
+
         if (duplicate == false)
         {
             stream.command.push.format("%s ", _handler_program(pos) + max);
@@ -61,6 +63,12 @@ bool Hint::tab()
     else // hint keyword
     {
         if (*(stream.command.push.pointer - 1) == code_space) return true;
+        else if (stream.command.push.pointer.position() == strlen(program)) // nie dziala po pipe
+        {
+            stream.command.push.character(code_space, "");
+            stream.output.push.character(code_space, "");
+            return true;
+        }
 
         auto keyword_number = _keyword_count(program);
 
@@ -73,6 +81,8 @@ bool Hint::tab()
         _keyword_calculate(keyword_number, program, candidate);
 
         auto [max, pos, duplicate] = _find_max(keyword_number);
+
+        if (max == 0) return true;
 
         if (duplicate == false)
         {
@@ -209,8 +219,6 @@ int Hint::_match_calculte(char * hint, char * word)
     }
     return count;
 }
-
-
 
 Hint::Result_max Hint::_find_max(int count)
 {
