@@ -21,8 +21,7 @@ Execute & Execute::enter()
         return *this;
     } 
 
-    stream::Stack<128> temp;
-    temp = stream.command;
+    auto temp = stream.command;
     stream.command.clear();
 
     auto count = temp.info.count(pipe);

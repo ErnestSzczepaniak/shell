@@ -11,9 +11,12 @@
 
 #include "stream.h"
 #include "shell_program.h"
-#include "shell_editor.h"
+#include "shell_modify.h"
 #include "shell_history.h"
 #include "shell_execute.h"
+#include "shell_ctrl.h"
+#include "shell_cursor.h"
+#include "shell_hint.h"
 
 class Shell
 {
@@ -45,53 +48,33 @@ class Shell
     };
 
 public:
-    Shell(Handler_flush flush, Handler_call call);
+    Shell(Handler_flush flush, Handler_call call, Handler_program program, Handler_keyword keyword);
     ~Shell();
 
     Shell & init();
     Shell & input(char character);
-    template<int size> Shell & add(char * name, char * (&keywords)[size]);
 
 protected:
-    void _handler_tab();
-    void _handler_enter();
-
     void _flush();
     void _prompt();
 
-    bool _program_known(char * name);
-
-    int _complete_match(char * possible, char * element);
-    Max _complete_max(int * match, int size);
-    int _complete_repetition(int * match, int size, int max);
+    // int _complete_match(char * possible, char * element);
+    // Max _complete_max(int * match, int size);
+    // int _complete_repetition(int * match, int size, int max);
 
 private:
     Stream _stream;
 
-    shell::Editor _editor;
+    shell::Modify _editor;
     shell::History _history;
     shell::Execute _execute;
+    shell::Ctrl _ctrl;
+    shell::Cursor _cursor;
+    shell::Hint _hint;
 
     Mode _mode = Mode::INPUT;
     Handler_flush _handler_flush = nullptr;
 
-    shell::Program _program[size_program];
-    int _program_number;
-
 }; /* class: Shell */
-
-
-template<int size> 
-Shell & Shell::add(char * name, char * (&keywords)[size])
-{
-    _program[_program_number].name(name);
-    _program[_program_number].keywords(&keywords[0]);
-    _program[_program_number].size_keywords(size);
-
-    _program_number++;
-
-    return *this;
-}
-
 
 #endif /* define: shell_h */

@@ -88,8 +88,15 @@ void xxor(Stream & stream)
 
 void echo(Stream & stream)
 {
-    auto * w = stream.command.pop.text();
-    stream.output.push.text(w);
+    if (stream.command.parse.option("lorem").is_present())
+    {
+        stream.output.push.text("Lorem ipsum seclorum");
+    }
+    else
+    {
+        auto * w = stream.command.pop.text();
+        stream.output.push.text(w);
+    }
 }
 
 void rnd(Stream & stream)
@@ -148,26 +155,59 @@ bool handler_call(char * name, Stream & stream)
     return false;
 }
 
-/* ---------------------------------------------| test |--------------------------------------------- */
+char * programs[] = {"gen", "xor", "echo", "rand", "reset"};
 
-// char * table[]
-// {
-//     "gen", "xor", "echo", "rand", "git"
-// };
+char * handler_program(int index)
+{
+    if (index < 5) return programs[index];
+    return nullptr;
+}
 
-// char * keywords_gen[] {"aasd", "asd"};
-// char * keywords_xor[] {"aasd", "asd"};
-// char * keywords_echo[] {"aasd", "asd"};
-// char * keywords_rand[] {"aasd", "asd"};
-// char * keywords_git[] {"push", "pull"};
+char * keyword_gen[] = {"number", "ascii"};
+char * keyword_xor[] = {"rand"};
+char * keyword_echo[] = {"lorem"};
+char * keyword_rand[] = {"ascii", "decimal", "data"};
+char * keyword_reset[] = {"terminal", "state"};
+
+char * handler_keyword(char * program, int index)
+{
+    if (strcmp(program, "gen") == 0)
+    {
+        if (index < sizeof(keyword_gen) / sizeof(char *)) return keyword_gen[index];
+        else return nullptr;
+    }
+    else if (strcmp(program, "xor") == 0)
+    {
+        if (index < sizeof(keyword_xor) / sizeof(char *)) return keyword_xor[index];
+        else return nullptr;
+    }
+    else if (strcmp(program, "echo") == 0)
+    {
+        if (index < sizeof(keyword_echo) / sizeof(char *)) return keyword_echo[index];
+        else return nullptr;
+    }
+    else if (strcmp(program, "rand") == 0)
+    {
+        if (index < sizeof(keyword_rand) / sizeof(char *)) return keyword_rand[index];
+        else return nullptr;
+    }
+    else if (strcmp(program, "reset") == 0)
+    {
+        if (index < sizeof(keyword_reset) / sizeof(char *)) return keyword_reset[index];
+        else return nullptr;
+    }
+    return nullptr;
+}
 
 TEST_CASE("test_case_name")
 { 
     enableRawMode();
 
-    Shell shell(handler_flush, handler_call);
+    Shell shell(handler_flush, handler_call, handler_program, handler_keyword);
 
     shell.init();
+
+    auto * w = handler_keyword("echo", 0);
 
     while(1)
     {
