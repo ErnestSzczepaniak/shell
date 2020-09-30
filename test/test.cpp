@@ -207,8 +207,6 @@ TEST_CASE("test_case_name")
 
     shell.init();
 
-    auto * w = handler_keyword("echo", 0);
-
     while(1)
     {
         auto character = get();
