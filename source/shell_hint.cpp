@@ -3,11 +3,7 @@
 namespace shell
 {
 
-Hint::Hint(Stream & stream, Handler_program program, Handler_keyword keyword) 
-: 
-stream(stream),
-_handler_program(program),
-_handler_keyword(keyword)
+Hint::Hint(Handler_program program, Handler_keyword keyword) : _handler_program(program), _handler_keyword(keyword)
 {
 
 }
@@ -17,19 +13,19 @@ Hint::~Hint()
 
 }
 
-bool Hint::tab()
+bool Hint::tab(Stream & stream)
 {   
     if (stream.command.push.pointer.position() == 0) return true;
     if (*stream.command.push.pointer != 0) return true;
 
     stream.command.push.pointer.save();
 
-    auto * candidate = _program_find();
+    auto * candidate = _program_find(stream);
     auto program_number = _program_count();
 
     stream.command.push.pointer.restore();
 
-    if (auto * program = _program_ready(program_number, candidate); program == nullptr) // hint parent
+    if (auto * program = _program_ready(program_number, candidate); program == nullptr)
     {
         _program_calculate(program_number, candidate);
 
@@ -63,7 +59,7 @@ bool Hint::tab()
     else // hint keyword
     {
         if (*(stream.command.push.pointer - 1) == code_space) return true;
-        else if (stream.command.push.pointer.position() == strlen(program)) // nie dziala po pipe
+        else if (stream.command.push.pointer - candidate == strlen(program))
         {
             stream.command.push.character(code_space, "");
             stream.output.push.character(code_space, "");
@@ -74,7 +70,7 @@ bool Hint::tab()
 
         stream.command.push.pointer.save();
 
-        auto * candidate = _keyword_find();
+        auto * candidate = _keyword_find(stream);
 
         stream.command.push.pointer.restore();
 
@@ -101,6 +97,7 @@ bool Hint::tab()
                     stream.output.push.text(_handler_keyword(program, i));
                 }
             }
+            
             stream.output.push.ansi.special.r().n();
 
             return false;
@@ -134,7 +131,7 @@ int Hint::_keyword_count(char * program)
     return count;
 }
 
-char * Hint::_program_find()
+char * Hint::_program_find(Stream & stream)
 {
     auto span = stream.command.push.pointer.position();
 
@@ -142,23 +139,16 @@ char * Hint::_program_find()
     {
         stream.command.push.pointer.move(-1);
 
-        if (stream.command.push.pointer.position() > 1)
+        if (*stream.command.push.pointer != code_space && *stream.command.push.pointer != code_pipe)
         {
-            char * candidate = stream.command.push.pointer;
-            char * space = stream.command.push.pointer - 1;
-            char * pipe = stream.command.push.pointer - 2;
-
-            if (*candidate != code_space && *candidate != code_pipe)
-            {
-                if (*space == code_space && *pipe == code_pipe) return stream.command.push.pointer;
-            }
-        }        
+            if (*(stream.command.push.pointer - 1) == code_space && *(stream.command.push.pointer - 2) == code_pipe) return stream.command.push.pointer;
+        }    
     }
     
     return stream.command.push.pointer;
 }
 
-char * Hint::_keyword_find()
+char * Hint::_keyword_find(Stream & stream)
 {
     auto span = stream.command.push.pointer.position();
 
@@ -166,18 +156,11 @@ char * Hint::_keyword_find()
     {
         stream.command.push.pointer.move(-1);
 
-        if (stream.command.push.pointer.position() > 1)
-        {
-            char * candidate = stream.command.push.pointer;
-            char * space = stream.command.push.pointer - 1;
-
-            if (*candidate != code_space && *space == code_space) return stream.command.push.pointer;
-        }  
+        if (*stream.command.push.pointer != code_space && *(stream.command.push.pointer - 1) == code_space) return stream.command.push.pointer;
     }   
 
     return stream.command.push.pointer;
 }
-
 
 char * Hint::_program_ready(int count, char * program)
 {
@@ -193,18 +176,12 @@ char * Hint::_program_ready(int count, char * program)
 
 void Hint::_program_calculate(int count, char * program)
 {
-    for (int i = 0; i < count; i++)
-    {
-        _match[i] = _match_calculte(program, _handler_program(i));
-    }
+    for (int i = 0; i < count; i++) _match[i] = _match_calculte(program, _handler_program(i));
 }
 
 void Hint::_keyword_calculate(int count, char * program, char * keyword)
 {
-    for (int i = 0; i < count; i++)
-    {
-        _match[i] = _match_calculte(keyword, _handler_keyword(program, i));
-    }  
+    for (int i = 0; i < count; i++) _match[i] = _match_calculte(keyword, _handler_keyword(program, i));
 }
 
 int Hint::_match_calculte(char * hint, char * word)
@@ -234,14 +211,10 @@ Hint::Result_max Hint::_find_max(int count)
             pos = i;
             duplicate = false;
         }
-        else if (_match[i] == max)
-        {
-            duplicate = true;
-        }
+        else if (_match[i] == max) duplicate = true;
     }
     
     return {max, pos, duplicate};
 }
-
 
 }; /* namespace: shell */

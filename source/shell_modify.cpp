@@ -3,17 +3,7 @@
 namespace shell
 {
 
-Modify::Modify(Stream & stream) : stream(stream)
-{
-
-}
-
-Modify::~Modify()
-{
-
-}
-
-Modify & Modify::backspace()
+Modify & Modify::backspace(Stream & stream)
 {
     if (stream.command.push.pointer.position() == 0) return *this;
 
@@ -31,7 +21,7 @@ Modify & Modify::backspace()
     return *this;
 }
 
-Modify & Modify::del()
+Modify & Modify::del(Stream & stream)
 {
     if (*stream.command.push.pointer == 0) return *this;
 
@@ -47,7 +37,7 @@ Modify & Modify::del()
     return *this;
 }
 
-Modify & Modify::print(char character)
+Modify & Modify::print(Stream & stream, char character)
 {
 
 if (stream.command.is_full()) return *this;

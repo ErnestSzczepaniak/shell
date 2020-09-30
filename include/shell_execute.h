@@ -20,16 +20,13 @@ class Execute
     static constexpr char * pipe_or_null =      "|\0";
 
 public:
-    Execute(Stream & stream, Handler_call call);
+    Execute(Handler_call call);
     ~Execute();
 
-    Execute & enter();
-
-protected:
-    Handler_call _handler_call;
+    Execute & enter(Stream & stream);
 
 private:
-    Stream & stream;
+    Handler_call _handler_call;
 
 }; /* class: Execute */
 

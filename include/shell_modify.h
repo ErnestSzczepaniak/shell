@@ -20,15 +20,9 @@ class Modify
     static constexpr auto code_space =          32;
 
 public:
-    Modify(Stream & stream);
-    ~Modify();
-
-    Modify & backspace();
-    Modify & print(char character);
-    Modify & del();
-
-private:
-    Stream & stream;    
+    Modify & backspace(Stream & stream);
+    Modify & print(Stream & stream, char character);
+    Modify & del(Stream & stream);
 
 }; /* class: Modify */
 

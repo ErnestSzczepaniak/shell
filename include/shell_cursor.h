@@ -17,16 +17,10 @@ namespace shell
 class Cursor
 {
 public:
-    Cursor(Stream & stream);
-    ~Cursor();
-
-    Cursor & home(bool output = true);
-    Cursor & end(bool output = true);
-    Cursor & left(bool output = true);
-    Cursor & right(bool output = true); 
-
-private:
-    Stream & stream;
+    Cursor & home(Stream & stream);
+    Cursor & end(Stream & stream);
+    Cursor & left(Stream & stream);
+    Cursor & right(Stream & stream);
 
 }; /* class: Cursor */
 

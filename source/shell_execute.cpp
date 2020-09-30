@@ -3,7 +3,7 @@
 namespace shell
 {
 
-Execute::Execute(Stream & stream, Handler_call call) : stream(stream), _handler_call(call)
+Execute::Execute(Handler_call call) : _handler_call(call)
 {
 
 }
@@ -13,7 +13,7 @@ Execute::~Execute()
 
 }
 
-Execute & Execute::enter()
+Execute & Execute::enter(Stream & stream)
 {
     if (stream.command.size_actual() == 0)
     {
@@ -35,23 +35,24 @@ Execute & Execute::enter()
         if (auto result = _handler_call(name, stream); result == true)
         {
             temp.pop.pointer.move(1); 
-            stream.command.clear();
 
             if (stream.error.push.pointer.position() > 0)
             {
                 stream.error.push.pointer.reset();
                 stream.error.push.format("%s: ", name);
                 stream.error.push.pointer.position(stream.error.size_actual());
-                return *this;
+                break;
             }
             else if (i < count) stream.flush();
         }
         else
         {
             stream.error.push.text("Command '").text(name, " ").text("' not found ...");
-            return *this;
+            break;
         }
     }
+
+    stream.command.clear();
 
     if (stream.output.push.pointer.position() > 0)
     {

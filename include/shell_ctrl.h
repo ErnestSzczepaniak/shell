@@ -20,14 +20,8 @@ class Ctrl
     static constexpr auto code_space =          32;
 
 public:
-    Ctrl(Stream & stream);
-    ~Ctrl();
-
-    Ctrl & left(bool output = true);
-    Ctrl & right(bool output = true);  
-
-private:
-    Stream & stream;
+    Ctrl & left(Stream & stream);
+    Ctrl & right(Stream & stream);
 
 }; /* class: Ctrl */
 

@@ -10,7 +10,6 @@
 **/
 
 #include "stream.h"
-#include "shell_program.h"
 #include "shell_modify.h"
 #include "shell_history.h"
 #include "shell_execute.h"
@@ -23,16 +22,14 @@ class Shell
     const char * name =                         "user@mouse";
 
     static constexpr auto code_tab =            9;
-    //static constexpr auto code_enter =          13; //10 for host
-    static constexpr auto code_enter =          10; //10 for host
+    static constexpr auto code_enter =          13; //10 for host
+    //static constexpr auto code_enter =          10; //10 for host
     static constexpr auto code_escape =         27;
-    //static constexpr auto code_backspace =      8; //127 for host
-    static constexpr auto code_backspace =      127; //127 for host
+    static constexpr auto code_backspace =      8; //127 for host
+    //static constexpr auto code_backspace =      127; //127 for host
 
     static constexpr auto size_program =        128;   
     enum class Mode {INPUT, ESCAPE};
-
-    struct Max {int max; int position;};
 
     static constexpr char escape[][8] = 
     {
@@ -57,10 +54,6 @@ public:
 protected:
     void _flush();
     void _prompt();
-
-    // int _complete_match(char * possible, char * element);
-    // Max _complete_max(int * match, int size);
-    // int _complete_repetition(int * match, int size, int max);
 
 private:
     Stream _stream;

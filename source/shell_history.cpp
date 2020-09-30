@@ -3,22 +3,12 @@
 namespace shell
 {
 
-History::History(Stream & stream) : stream(stream)
-{
-
-}
-
-History::~History()
-{
-
-}
-
-History & History::up()
+History & History::up(Stream & stream)
 {
     return *this;
 }
 
-History & History::down()
+History & History::down(Stream & stream)
 {
     return *this;
 }

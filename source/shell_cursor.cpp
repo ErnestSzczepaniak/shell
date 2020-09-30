@@ -3,17 +3,7 @@
 namespace shell
 {
 
-Cursor::Cursor(Stream & stream) : stream(stream)
-{
-
-}
-
-Cursor::~Cursor()
-{
-
-}
-
-Cursor & Cursor::home(bool output)
+Cursor & Cursor::home(Stream & stream)
 {
     if (stream.command.push.pointer.position() == 0) return *this;
 
@@ -23,7 +13,7 @@ Cursor & Cursor::home(bool output)
     return *this;
 }
 
-Cursor & Cursor::end(bool output)
+Cursor & Cursor::end(Stream & stream)
 {
     if (*stream.command.push.pointer == 0) return *this;
 
@@ -34,7 +24,7 @@ Cursor & Cursor::end(bool output)
     return *this;
 }
 
-Cursor & Cursor::left(bool output)
+Cursor & Cursor::left(Stream & stream)
 {
     if (stream.command.push.pointer.position() == 0) return *this;
 
@@ -44,7 +34,7 @@ Cursor & Cursor::left(bool output)
     return *this;
 }
 
-Cursor & Cursor::right(bool output)
+Cursor & Cursor::right(Stream & stream)
 {
     if (*stream.command.push.pointer == 0) return *this;
 

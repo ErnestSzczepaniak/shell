@@ -23,20 +23,20 @@ class Hint
     struct Result_max {int value; int pos; bool duplicate;};
 
 public:
-    Hint(Stream & stream, Handler_program program, Handler_keyword keyword);
+    Hint(Handler_program program, Handler_keyword keyword);
     ~Hint();  
 
-    bool tab();
+    bool tab(Stream & stream);
 
 protected:
     int _program_count();
     int _keyword_count(char * program);
 
-    char * _program_find();
+    char * _program_find(Stream & stream);
     char * _program_ready(int count, char * program);
     void _program_calculate(int count, char * program);
 
-    char * _keyword_find();
+    char * _keyword_find(Stream & stream);
 
     int _match_calculte(char * hint, char * word);
 
@@ -45,8 +45,6 @@ protected:
     Result_max _find_max(int count);
 
 private:
-    Stream & stream;
-
     Handler_program _handler_program;
     Handler_keyword _handler_keyword;
 
@@ -54,8 +52,6 @@ private:
 
 }; /* class: Hint */
 
-
 }; /* namespace: shell */
-
 
 #endif /* define: shell_hint_h */

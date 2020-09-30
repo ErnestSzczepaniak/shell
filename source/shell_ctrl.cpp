@@ -3,66 +3,39 @@
 namespace shell
 {
 
-Ctrl::Ctrl(Stream & stream) : stream(stream)
+Ctrl & Ctrl::left(Stream & stream)
 {
+    auto span = stream.command.push.pointer.position();
 
-}
-
-Ctrl::~Ctrl()
-{
-
-}
-
-Ctrl & Ctrl::left(bool output)
-{
-    if (stream.command.push.pointer.position() == 0) return *this;
-
-    auto position = stream.command.push.pointer.position();
-
-    for (int i = 0; i < position; i++)
+    for (int i = 0; i < span; i++)
     {
-        if (*stream.command.push.pointer != code_null && *stream.command.push.pointer != code_space)
-        {
-            if (*(stream.command.push.pointer - 1) == code_space && i > 0) break;
-            else stream.command.push.pointer.move(-1);
-        }
-        else stream.command.push.pointer.move(-1);
+        stream.command.push.pointer.move(-1);
+
+        if (*stream.command.push.pointer != 0 && *(stream.command.push.pointer - 1) == code_space) break;
     }
+    
+    auto shift = span - stream.command.push.pointer.position();
 
-    auto shift = position - stream.command.push.pointer.position();
-
-    if (shift > 0 && output) stream.output.push.ansi.cursor.move.left(shift);
+    if (shift > 0) stream.output.push.ansi.cursor.move.left(shift);
 
     return *this;
 }
 
-Ctrl & Ctrl::right(bool output)
+Ctrl & Ctrl::right(Stream & stream)
 {
-    if (*stream.command.push.pointer == 0) return *this;
-
     auto initial = stream.command.push.pointer.position();
-    auto iterations = stream.command.size_actual() - initial;
+    auto span = stream.command.size_actual() - initial;
 
-    for (int i = 0; i < iterations; i++)
+    for (int i = 0; i < span; i++)
     {
-        if (*stream.command.push.pointer != code_null && *stream.command.push.pointer != code_space)
-        {
-            if (*(stream.command.push.pointer + 1) == code_null || *(stream.command.push.pointer + 1) == code_space)
-            {
-                if (i > 0)
-                {
-                    stream.command.push.pointer.move(1);
-                    break;
-                }
-            }
-            else stream.command.push.pointer.move(1);
-        }
-        else stream.command.push.pointer.move(1);
+        stream.command.push.pointer.move(1);
+
+        if (*stream.command.push.pointer == code_space && *(stream.command.push.pointer + 1) != 0) break;
     }
 
     auto shift = stream.command.push.pointer.position() - initial;
 
-    if (shift > 0 && output) stream.output.push.ansi.cursor.move.right(shift);
+    if (shift > 0) stream.output.push.ansi.cursor.move.right(shift);
 
     return *this;
 }

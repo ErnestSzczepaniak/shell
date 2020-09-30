@@ -3,12 +3,8 @@
 Shell::Shell(Handler_flush flush, Handler_call call, Handler_program program, Handler_keyword keyword) 
 :
 _handler_flush(flush),
-_editor(_stream),
-_history(_stream),
-_ctrl(_stream),
-_cursor(_stream),
-_execute(_stream, call),
-_hint(_stream, program, keyword)
+_execute(call),
+_hint(program, keyword)
 {
 
 }
@@ -35,17 +31,17 @@ Shell & Shell::input(char character)
     {
         if (character == code_tab)
         {
-            auto result = _hint.tab();
+            auto result = _hint.tab(_stream);
 
             if (result == false) _prompt();
         } 
         else if (character == code_enter)
         {
-            _execute.enter();
+            _execute.enter(_stream);
             _prompt();
         }
-        else if (character == code_backspace) _editor.backspace();
-        else if (character >= 32 && character < 127) _editor.print(character);
+        else if (character == code_backspace) _editor.backspace(_stream);
+        else if (character >= 32 && character < 127) _editor.print(_stream, character);
         else if (character == code_escape)
         {
             _stream.input.push.character(character, "");
@@ -60,15 +56,15 @@ Shell & Shell::input(char character)
         {
             if (tools::string::compare::difference(_stream.input.buffer, (char *) &escape[i][0]) != 0) continue;
 
-            if (i == 0) _cursor.home();
-            else if (i == 1) _cursor.end();
-            else if (i == 2) _cursor.left();
-            else if (i == 3) _cursor.right();
-            else if (i == 4) _history.up();
-            else if (i == 5) _history.down();
-            else if (i == 6) _editor.del();
-            else if (i == 7) _ctrl.left();
-            else if (i == 8) _ctrl.right();
+            if (i == 0) _cursor.home(_stream);
+            else if (i == 1) _cursor.end(_stream);
+            else if (i == 2) _cursor.left(_stream);
+            else if (i == 3) _cursor.right(_stream);
+            else if (i == 4) _history.up(_stream);
+            else if (i == 5) _history.down(_stream);
+            else if (i == 6) _editor.del(_stream);
+            else if (i == 7) _ctrl.left(_stream);
+            else if (i == 8) _ctrl.right(_stream);
 
             _mode = Mode::INPUT;
             _stream.input.clear();
@@ -115,33 +111,3 @@ void Shell::_prompt()
     _stream.output.push.ansi.color.foreground(255, 255, 255);
     _stream.output.push.text(_stream.command.buffer);
 }
-
-
-
-
-// Shell::Max Shell::_complete_max(int * match, int size)
-// {
-//     auto max = 0;
-//     auto pos = 0;
-
-//     for (int i = 0; i < size; i++)
-//     {
-//         if (match[i] > max)
-//         {
-//             max = match[i];
-//             pos = i;
-//         }
-//     }
-//     return {max, pos};
-// }
-
-// int Shell::_complete_repetition(int * match, int size, int max)
-// {
-//     auto count = 0;
-
-//     for (int i = 0; i < size; i++)
-//     {
-//         if (match[i] == max) count++;
-//     }
-//     return count;
-// }

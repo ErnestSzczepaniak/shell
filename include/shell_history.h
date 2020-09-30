@@ -17,15 +17,9 @@ namespace shell
 class History
 {
 public:
-    History(Stream & stream);
-    ~History();
+    History & up(Stream & stream);
+    History & down(Stream & stream);
 
-    History & up();
-    History & down();
-
-private:
-    Stream & stream;
-    
 }; /* class: History */
 
 
