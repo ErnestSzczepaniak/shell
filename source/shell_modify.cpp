@@ -39,13 +39,24 @@ Modify & Modify::del(Stream & stream)
 
 Modify & Modify::print(Stream & stream, char character)
 {
-
-if (stream.command.is_full()) return *this;
+    if (stream.command.is_full()) return *this;
 
     stream.command.push.character(character, "");
     stream.output.push.text(stream.command.push.pointer - 1);
 
     if (*stream.command.push.pointer != 0) stream.output.push.ansi.cursor.move.left(stream.command.size_actual() - stream.command.push.pointer.position());
+
+    return *this;
+}
+
+Modify & Modify::clear(Stream & stream)
+{
+    if (stream.command.size_actual() == 0) return *this;
+
+    if (stream.command.push.pointer.position() != 0) stream.output.push.ansi.cursor.move.left(stream.command.push.pointer.position());
+    stream.output.push.ansi.clear.line.right();
+
+    stream.command.clear();
 
     return *this;
 }

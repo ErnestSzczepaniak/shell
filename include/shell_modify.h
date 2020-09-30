@@ -23,6 +23,7 @@ public:
     Modify & backspace(Stream & stream);
     Modify & print(Stream & stream, char character);
     Modify & del(Stream & stream);
+    Modify & clear(Stream & stream);
 
 }; /* class: Modify */
 

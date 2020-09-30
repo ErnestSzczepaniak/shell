@@ -19,17 +19,18 @@
 
 class Shell
 {
-    const char * name =                         "user@mouse";
+    const char * name =                         "en2@mouse";
 
     static constexpr auto code_tab =            9;
-    static constexpr auto code_enter =          13; //10 for host
-    //static constexpr auto code_enter =          10; //10 for host
+    static constexpr auto code_clear =          21;
     static constexpr auto code_escape =         27;
-    static constexpr auto code_backspace =      8; //127 for host
-    //static constexpr auto code_backspace =      127; //127 for host
-
-    static constexpr auto size_program =        128;   
-    enum class Mode {INPUT, ESCAPE};
+    #ifdef build_platform_target
+    static constexpr auto code_backspace =      8;
+    static constexpr auto code_enter =          13;
+    #else
+    static constexpr auto code_enter =          10;
+    static constexpr auto code_backspace =      127;
+    #endif
 
     static constexpr char escape[][8] = 
     {
@@ -40,9 +41,17 @@ class Shell
         {27,  91,  65,  0,   0,    0,   0}, // up
         {27,  91,  66,  0,   0,    0,   0}, // down
         {27,  91,  51,  126, 0,    0,   0}, // delete
+        #ifdef build_platform_target
+        {27,  91,  49,  59,  68,  0,    0}, // ctrl_left
+        {27,  91,  49,  59,  67,  0,    0}  // ctrl_right
+        #else
         {27,  91,  49,  59,  53,   68,  0}, // ctrl_left
         {27,  91,  49,  59,  53,   67,  0}  // ctrl_right
+        #endif
     };
+
+    // 1b 5b 31 3b 35 44
+    enum class Mode {INPUT, ESCAPE};
 
 public:
     Shell(Handler_flush flush, Handler_call call, Handler_program program, Handler_keyword keyword);
@@ -58,7 +67,7 @@ protected:
 private:
     Stream _stream;
 
-    shell::Modify _editor;
+    shell::Modify _modify;
     shell::History _history;
     shell::Execute _execute;
     shell::Ctrl _ctrl;

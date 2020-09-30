@@ -32,6 +32,7 @@ bool Hint::tab(Stream & stream)
         auto [max, pos, duplicate] = _find_max(program_number);
 
         if (max == 0) return true;
+        if (max != tools::string::get::size(candidate, " \0")) return true;
 
         if (duplicate == false)
         {
@@ -79,6 +80,8 @@ bool Hint::tab(Stream & stream)
         auto [max, pos, duplicate] = _find_max(keyword_number);
 
         if (max == 0) return true;
+        if (max != tools::string::get::size(candidate, " \0")) return true;
+
 
         if (duplicate == false)
         {

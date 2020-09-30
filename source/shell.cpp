@@ -29,10 +29,13 @@ Shell & Shell::input(char character)
 {
     if (_mode == Mode::INPUT)
     {
+
+        if (character == code_backspace) _modify.backspace(_stream);
+        else if (character == code_clear) _modify.clear(_stream);
+        else if (character >= 32 && character < 127) _modify.print(_stream, character);
         if (character == code_tab)
         {
             auto result = _hint.tab(_stream);
-
             if (result == false) _prompt();
         } 
         else if (character == code_enter)
@@ -40,8 +43,6 @@ Shell & Shell::input(char character)
             _execute.enter(_stream);
             _prompt();
         }
-        else if (character == code_backspace) _editor.backspace(_stream);
-        else if (character >= 32 && character < 127) _editor.print(_stream, character);
         else if (character == code_escape)
         {
             _stream.input.push.character(character, "");
@@ -62,7 +63,7 @@ Shell & Shell::input(char character)
             else if (i == 3) _cursor.right(_stream);
             else if (i == 4) _history.up(_stream);
             else if (i == 5) _history.down(_stream);
-            else if (i == 6) _editor.del(_stream);
+            else if (i == 6) _modify.del(_stream);
             else if (i == 7) _ctrl.left(_stream);
             else if (i == 8) _ctrl.right(_stream);
 

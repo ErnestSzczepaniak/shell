@@ -211,7 +211,7 @@ TEST_CASE("test_case_name")
     {
         auto character = get();
 
-        auto event = shell.input(character);
+        shell.input(character);
 
     }
 }
