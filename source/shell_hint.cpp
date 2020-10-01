@@ -15,8 +15,8 @@ Hint::~Hint()
 
 bool Hint::tab(Stream & stream)
 {   
-    if (stream.command.push.pointer.position() == 0) return true;
-    if (*stream.command.push.pointer != 0) return true;
+    if (stream.command.push.pointer.position() == 0) return false;
+    if (*stream.command.push.pointer != 0) return false;
 
     stream.command.push.pointer.save();
 
@@ -31,15 +31,15 @@ bool Hint::tab(Stream & stream)
 
         auto [max, pos, duplicate] = _find_max(program_number);
 
-        if (max == 0) return true;
-        if (max != tools::string::get::size(candidate, " \0")) return true;
+        if (max == 0) return false;
+        if (max != tools::string::get::size(candidate, " \0")) return false;
 
         if (duplicate == false)
         {
             stream.command.push.format("%s ", _handler_program(pos) + max);
             stream.output.push.format("%s ", _handler_program(pos) + max);
 
-            return true;
+            return false;
         }
         else
         {
@@ -52,19 +52,17 @@ bool Hint::tab(Stream & stream)
                 }
             }   
 
-            stream.output.push.ansi.special.r().n();
-            
-            return false;
+            return true;
         }
     }
     else // hint keyword
     {
-        if (*(stream.command.push.pointer - 1) == code_space) return true;
+        if (*(stream.command.push.pointer - 1) == code_space) return false;
         else if (stream.command.push.pointer - candidate == strlen(program))
         {
             stream.command.push.character(code_space, "");
             stream.output.push.character(code_space, "");
-            return true;
+            return false;
         }
 
         auto keyword_number = _keyword_count(program);
@@ -79,16 +77,15 @@ bool Hint::tab(Stream & stream)
 
         auto [max, pos, duplicate] = _find_max(keyword_number);
 
-        if (max == 0) return true;
-        if (max != tools::string::get::size(candidate, " \0")) return true;
-
+        if (max == 0) return false;
+        if (max != tools::string::get::size(candidate, " \0")) return false;
 
         if (duplicate == false)
         {
             stream.command.push.format("%s ", _handler_keyword(program, pos) + max);
             stream.output.push.format("%s ", _handler_keyword(program, pos) + max);
 
-            return true;  
+            return false;  
         }
         else
         {
@@ -101,13 +98,11 @@ bool Hint::tab(Stream & stream)
                 }
             }
             
-            stream.output.push.ansi.special.r().n();
-
-            return false;
+            return true;
         }
     }
 
-    return true;
+    return false;
 }
 
 int Hint::_program_count()

@@ -18,30 +18,32 @@ Shell & Shell::init()
 {
     _stream.output.push.ansi.reset().size(150, 50);
 
-    _prompt();
-
     _flush();
+
+    _prompt();
 
     return *this;
 }
 
 Shell & Shell::input(char character)
 {
+    auto flush_newline = false;
+    auto prompt_newline = false;
+
     if (_mode == Mode::INPUT)
     {
-
         if (character == code_backspace) _modify.backspace(_stream);
         else if (character == code_clear) _modify.clear(_stream);
         else if (character >= 32 && character < 127) _modify.print(_stream, character);
         if (character == code_tab)
         {
-            auto result = _hint.tab(_stream);
-            if (result == false) _prompt();
+            prompt_newline = _hint.tab(_stream); // false - nieudalo sie
         } 
         else if (character == code_enter)
         {
-            _execute.enter(_stream);
-            _prompt();
+            flush_newline = _execute.enter(_stream); // naweline after output - empty or error
+            prompt_newline = true;
+
         }
         else if (character == code_escape)
         {
@@ -78,37 +80,42 @@ Shell & Shell::input(char character)
         }
     }
     
-    _flush();
+    _flush(flush_newline);
+
+    if (prompt_newline) _prompt(true);
 
     return *this;
 }
 
 /* ---------------------------------------------| info |--------------------------------------------- */
 
-void Shell::_flush()
+void Shell::_newline()
 {
+    char * data = "\r\n";
+    _handler_flush(data, strlen(data));
+}
+
+void Shell::_prompt(bool newline)
+{
+    if (newline) _newline();
+
+    char * data = "\e[38;2;0;255;0men2@mouse: \e[38;2;255;255;255m";
+    _handler_flush(data, strlen(data));
+    _handler_flush(_stream.command.buffer, _stream.command.size_actual());
+}
+
+void Shell::_flush(bool newline)
+{
+    if (newline) _newline();
+
     if (_stream.error.push.pointer.position() > 0)
     {
-        _stream.error.push.pointer.reset();
-        _stream.error.push.ansi.special.r().n().r().n();
-        _stream.error.push.pointer.position(_stream.error.size_actual());
-        _stream.error.push.ansi.special.r().n().r().n();
-
         _handler_flush(_stream.error.buffer, _stream.error.push.pointer.position());
         _stream.error.clear();
     }
-
-    if (_stream.output.push.pointer.position() > 0)
+    else if (_stream.output.push.pointer.position() > 0)
     {
         _handler_flush(_stream.output.buffer, _stream.output.push.pointer.position());
         _stream.output.clear();
     }
-}
-
-void Shell::_prompt()
-{
-    _stream.output.push.ansi.color.foreground(0, 255, 0);
-    _stream.output.push.format("%s: ", name);
-    _stream.output.push.ansi.color.foreground(255, 255, 255);
-    _stream.output.push.text(_stream.command.buffer);
 }

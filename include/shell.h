@@ -41,16 +41,10 @@ class Shell
         {27,  91,  65,  0,   0,    0,   0}, // up
         {27,  91,  66,  0,   0,    0,   0}, // down
         {27,  91,  51,  126, 0,    0,   0}, // delete
-        #ifdef build_platform_target
-        {27,  91,  49,  59,  68,  0,    0}, // ctrl_left
-        {27,  91,  49,  59,  67,  0,    0}  // ctrl_right
-        #else
         {27,  91,  49,  59,  53,   68,  0}, // ctrl_left
         {27,  91,  49,  59,  53,   67,  0}  // ctrl_right
-        #endif
     };
 
-    // 1b 5b 31 3b 35 44
     enum class Mode {INPUT, ESCAPE};
 
 public:
@@ -61,8 +55,9 @@ public:
     Shell & input(char character);
 
 protected:
-    void _flush();
-    void _prompt();
+    void _newline();
+    void _prompt(bool newline = false);
+    void _flush(bool newline = false);
 
 private:
     Stream _stream;

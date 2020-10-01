@@ -13,56 +13,41 @@ Execute::~Execute()
 
 }
 
-Execute & Execute::enter(Stream & stream)
+bool Execute::enter(Stream & stream)
 {
-    if (stream.command.size_actual() == 0)
-    {
-        stream.output.push.ansi.special.r().n();
-        return *this;
-    } 
+    if (stream.command.size_actual() == 0) return false;
 
     auto temp = stream.command;
-    stream.command.clear();
-
     auto count = temp.info.count(pipe);
 
     for (int i = 0; i < count + 1; i++)
     {
         auto * name = temp.pop.word();
 
+        stream.command.clear();
+
         stream.command.push.text(temp.pop.text(pipe_or_null), pipe_or_null);
+        stream.error.push.text("Command '").text(name, " ").text("': ");
+
+        auto position = stream.error.push.pointer.position();
 
         if (auto result = _handler_call(name, stream); result == true)
         {
             temp.pop.pointer.move(1); 
 
-            if (stream.error.push.pointer.position() > 0)
-            {
-                stream.error.push.pointer.reset();
-                stream.error.push.format("%s: ", name);
-                stream.error.push.pointer.position(stream.error.size_actual());
-                break;
-            }
+            if (stream.error.push.pointer.position() > position) break;
             else if (i < count) stream.flush();
+
+            stream.error.clear();
+            continue;
         }
-        else
-        {
-            stream.error.push.text("Command '").text(name, " ").text("' not found ...");
-            break;
-        }
+
+        stream.error.push.text("not found ...");
     }
 
     stream.command.clear();
-
-    if (stream.output.push.pointer.position() > 0)
-    {
-        stream.output.push.ansi.special.r().n(); // always newline
-        stream.output.push.pointer.reset();
-        stream.output.push.ansi.special.r().n();
-        stream.output.push.pointer.position(stream.output.size_actual());
-    }
-
-    return *this;
+    
+    return true;
 }
 
 

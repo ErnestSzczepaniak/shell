@@ -23,7 +23,7 @@ public:
     Execute(Handler_call call);
     ~Execute();
 
-    Execute & enter(Stream & stream);
+    bool enter(Stream & stream);
 
 private:
     Handler_call _handler_call;
