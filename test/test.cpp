@@ -129,6 +129,28 @@ void handler_flush(char * buffer, int size)
     fflush(nullptr);
 }
 
+void color(Stream & stream)
+{
+    stream.output = stream.input;
+    stream.output.push.pointer.reset();
+
+    if (stream.command.parse.option("red").is_present())
+    {
+        stream.output.push.ansi.color.foreground(255, 0, 0);
+    }
+    else if (stream.command.parse.option("green").is_present())
+    {
+        stream.output.push.ansi.color.foreground(0, 255, 0);
+    }
+    else if (stream.command.parse.option("blue").is_present())
+    {
+        stream.output.push.ansi.color.foreground(0, 0, 255);
+    }
+
+    stream.output.push.pointer.position(stream.output.size_actual());
+    stream.output.push.ansi.color.foreground(255, 255, 255);
+}
+
 bool handler_call(char * name, Stream & stream)
 {
     if (strncmp(name, "gen", strlen("gen")) == 0)
@@ -151,15 +173,20 @@ bool handler_call(char * name, Stream & stream)
         rnd(stream);
         return true;
     }
-    
+    else if (strncmp(name, "color", strlen("color")) == 0)
+    {
+        color(stream);
+        return true;
+    }
+
     return false;
 }
 
-char * programs[] = {"gen", "xor", "echo", "rand", "reset"};
+char * programs[] = {"gen", "xor", "echo", "rand", "reset", "color"};
 
 char * handler_program(int index)
 {
-    if (index < 5) return programs[index];
+    if (index < 6) return programs[index];
     return nullptr;
 }
 
@@ -168,6 +195,7 @@ char * keyword_xor[] = {"rand"};
 char * keyword_echo[] = {"lorem"};
 char * keyword_rand[] = {"ascii", "decimal", "data"};
 char * keyword_reset[] = {"terminal", "state"};
+char * keyword_color[] = {"red", "green", "blue"};
 
 char * handler_keyword(char * program, int index)
 {
@@ -196,6 +224,12 @@ char * handler_keyword(char * program, int index)
         if (index < sizeof(keyword_reset) / sizeof(char *)) return keyword_reset[index];
         else return nullptr;
     }
+    else if (strcmp(program, "color") == 0)
+    {
+        if (index < sizeof(keyword_color) / sizeof(char *)) return keyword_color[index];
+        else return nullptr;
+    }
+
     return nullptr;
 }
 

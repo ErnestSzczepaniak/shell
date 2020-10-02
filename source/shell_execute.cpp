@@ -45,6 +45,7 @@ bool Execute::enter(Stream & stream)
         stream.error.push.text("not found ...");
     }
 
+    stream.input.clear();
     stream.command.clear();
     
     return true;

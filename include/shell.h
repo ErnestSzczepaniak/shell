@@ -53,9 +53,12 @@ public:
 
     Shell & init();
     Shell & input(char character);
+    Shell & output(char * data);
+    Shell & execute(char * data);
 
 protected:
     void _newline();
+    void _clear();
     void _prompt(bool newline = false);
     void _flush(bool newline = false);
 

@@ -87,7 +87,42 @@ Shell & Shell::input(char character)
     return *this;
 }
 
+Shell & Shell::output(char * data)
+{
+    _clear();
+    _handler_flush(data, strlen(data));
+    _prompt(true);
+
+    return *this;
+}
+
+Shell & Shell::execute(char * data)
+{
+    auto temp = _stream.command;
+
+    _stream.command.clear();
+    _stream.command.push.text(data);
+
+    _execute.enter(_stream);
+
+    _clear();
+
+    _flush(false);
+
+    _stream.command = temp;
+
+    _prompt(true);
+
+    return *this;
+}
+
 /* ---------------------------------------------| info |--------------------------------------------- */
+
+void Shell::_clear()
+{
+    char * data = "\e[2K\e[0G";
+    _handler_flush(data, strlen(data));
+}
 
 void Shell::_newline()
 {
@@ -101,7 +136,17 @@ void Shell::_prompt(bool newline)
 
     char * data = "\e[38;2;0;255;0men2@mouse: \e[38;2;255;255;255m";
     _handler_flush(data, strlen(data));
-    _handler_flush(_stream.command.buffer, _stream.command.size_actual());
+
+    auto size = _stream.command.size_actual();
+    _handler_flush(_stream.command.buffer, size);
+
+    auto offset = size - _stream.command.push.pointer.position();
+
+    if (offset > 0)
+    {
+        _stream.output.push.ansi.cursor.move.left(offset);
+        _flush(false);
+    }
 }
 
 void Shell::_flush(bool newline)
