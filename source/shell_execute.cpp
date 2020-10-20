@@ -43,12 +43,13 @@ bool Execute::enter(Stream & stream)
         }
 
         stream.error.push.text("not found ...");
+        return true;
     }
 
     stream.input.clear();
     stream.command.clear();
     
-    return true;
+    return (stream.output.push.pointer.position() != 0);
 }
 
 
