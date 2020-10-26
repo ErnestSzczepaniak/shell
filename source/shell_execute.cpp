@@ -19,6 +19,7 @@ bool Execute::enter(Stream & stream)
 
     auto temp = stream.command;
     auto count = temp.info.count(pipe);
+    auto newline = false;
 
     for (int i = 0; i < count + 1; i++)
     {
@@ -35,7 +36,11 @@ bool Execute::enter(Stream & stream)
         {
             temp.pop.pointer.move(1); 
 
-            if (stream.error.push.pointer.position() > position) break;
+            if (stream.error.push.pointer.position() > position)
+            {
+                newline = true;
+                break;
+            }
             else if (i < count) stream.flush();
 
             stream.error.clear();
@@ -43,13 +48,15 @@ bool Execute::enter(Stream & stream)
         }
 
         stream.error.push.text("not found ...");
-        return true;
+        newline = true;
     }
 
     stream.input.clear();
     stream.command.clear();
     
-    return (stream.output.push.pointer.position() != 0);
+    if (newline == false) newline = stream.output.push.pointer.position() != 0;
+
+    return newline;
 }
 
 
