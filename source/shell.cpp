@@ -87,9 +87,11 @@ Shell & Shell::input(char character)
     return *this;
 }
 
-Shell & Shell::output(char * data)
+Shell & Shell::output(char * caller, char * data)
 {
     _clear();
+    _handler_flush(caller, strlen(caller));
+    _tab();
     _handler_flush(data, strlen(data));
     _prompt(true);
 
@@ -121,6 +123,12 @@ Shell & Shell::execute(char * data)
 void Shell::_clear()
 {
     char * data = "\e[2K\e[0G";
+    _handler_flush(data, strlen(data));
+}
+
+void Shell::_tab()
+{
+    char * data = " : ";
     _handler_flush(data, strlen(data));
 }
 
