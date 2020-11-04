@@ -16,9 +16,25 @@ namespace shell
 
 class History
 {
+    static constexpr auto size = 10;
+    using Stack = stream::Stack<128>;
+
 public:
-    History & up(Stream & stream);
-    History & down(Stream & stream);
+    History & push(Stream & stream);
+
+    bool up(Stream & stream);
+    bool down(Stream & stream);
+
+protected:
+    bool _is_unique(Stack & stack);
+    void _shift(int items);
+
+private:
+    int _size = 0;
+    int _pointer = -1;
+
+    Stack _stack[size];
+    Stack _stash;
 
 }; /* class: History */
 
