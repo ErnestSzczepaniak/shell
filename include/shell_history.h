@@ -16,7 +16,7 @@ namespace shell
 
 class History
 {
-    static constexpr auto size = 10;
+    static constexpr auto size = 16;
     using Stack = stream::Stack<128>;
 
 public:

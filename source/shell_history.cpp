@@ -10,7 +10,7 @@ History & History::push(Stack & stack) // warunek na not empty string
         if (auto index = _find(stack); index == -1)
         {
             _shift(_size);
-            if (_size < 10) _size++;
+            if (_size < size) _size++;
         }
         else _shift(index);
 
