@@ -3,74 +3,58 @@
 namespace shell
 {
 
-History & History::push(Stream & stream) // warunek na not empty string
+History & History::push(Stack & stack) // warunek na not empty string
 {
-    _pointer = -1;
-
-    if (stream.command.push.pointer.position() > 0)
+    if (stack.push.pointer.position() > 0)
     {
-        for (int i = 0; i < _size; i++)
+        if (auto index = _find(stack); index == -1)
         {
-            if (stream.command == _stack[i])
-            {
-                auto temp = _stack[i];
-
-                for (int j = 0; j < i; j++)
-                {
-                    _stack[i - j] = _stack[i - j -1];
-                }
-
-                _stack[0] = stream.command;
-
-                return *this;
-            }
+            _shift(_size);
+            if (_size < 10) _size++;
         }
-        
-        for (int i = 0; i < 9; i++)
-        {
-            _stack[9 - i] = _stack[9 - i -1];
-        }
-        
-        _stack[0] = stream.command;
+        else _shift(index);
 
-        if (_size < 10) _size++;
+        _stack[0] = stack;
     }
 
+    _pointer = -1;
     return *this;
 }
 
-bool  History::up(Stream & stream)
+bool History::up(Stack & stack)
 {
-    if (_pointer == -1)
-    {
-        _stash = stream.command;
-    }
-
-    if (_pointer < _size -1)
-    {
-        stream.command.reset();
-        stream.command = _stack[++_pointer];
-        return true;
-    } 
+    if (_pointer < _size - 1) _pointer++;
     else return false;
+
+    if (_pointer == 0) _stash = stack;
+
+    stack = _stack[_pointer];
+
+    return true;
 }
 
-bool  History::down(Stream & stream)
+bool History::down(Stack & stack)
 {
-    if (_pointer == 0)
-    {   
-        _pointer = -1;
-        stream.command = _stash;
-        return true;
-    }
-    else if (_pointer > 0) 
-    {
-        stream.command.reset();
-        stream.command = _stack[--_pointer];
-        return true;
-    }
+    if (_pointer >= 0) _pointer--;
     else return false;
 
+    if (_pointer == -1) stack = _stash;
+    else stack = _stack[_pointer];
+
+    return true;
+}
+
+/* ---------------------------------------------| info |--------------------------------------------- */
+
+int History::_find(Stack & stack)
+{
+    for (int i = 0; i < _size; i++) if (_stack[i] == stack) return i;
+    return -1;
+}
+
+void History::_shift(int items)
+{
+    for (int i = 0; i < items; i++) _stack[items - i] = _stack[items - i - 1];
 }
 
 }; /* namespace: shell */

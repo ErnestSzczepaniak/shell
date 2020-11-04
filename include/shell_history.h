@@ -20,13 +20,13 @@ class History
     using Stack = stream::Stack<128>;
 
 public:
-    History & push(Stream & stream);
+    History & push(Stack & stack);
 
-    bool up(Stream & stream);
-    bool down(Stream & stream);
+    bool up(Stack & stack);
+    bool down(Stack & stack);
 
 protected:
-    bool _is_unique(Stack & stack);
+    int _find(Stack & stack);
     void _shift(int items);
 
 private:
@@ -38,8 +38,6 @@ private:
 
 }; /* class: History */
 
-
 }; /* namespace: shell */
-
 
 #endif /* define: shell_history_h */

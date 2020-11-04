@@ -42,7 +42,7 @@ Shell & Shell::input(char character)
         } 
         else if (character == code_enter)
         {
-            _history.push(_stream);
+            _history.push(_stream.command);
 
             flush_newline = _execute.enter(_stream); // naweline after output - empty or error
             prompt_newline = true;
@@ -66,8 +66,8 @@ Shell & Shell::input(char character)
             else if (i == 1) _cursor.end(_stream);
             else if (i == 2) _cursor.left(_stream);
             else if (i == 3) _cursor.right(_stream);
-            else if (i == 4) prompt_history = _history.up(_stream);
-            else if (i == 5) prompt_history = _history.down(_stream);
+            else if (i == 4) prompt_history = _history.up(_stream.command);
+            else if (i == 5) prompt_history = _history.down(_stream.command);
             else if (i == 6) _modify.del(_stream);
             else if (i == 7) _ctrl.left(_stream);
             else if (i == 8) _ctrl.right(_stream);
