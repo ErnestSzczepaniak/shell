@@ -136,7 +136,7 @@ void Shell::_clear()
 
 void Shell::_tab()
 {
-    char * data = " : ";
+    char * data = ": ";
     _handler_flush(data, strlen(data));
 }
 
