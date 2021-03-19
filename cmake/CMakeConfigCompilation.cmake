@@ -21,7 +21,7 @@ set(public_option_common        )
 set(public_option_target        )
 set(public_option_host          )
 
-set(private_option_common       )
+set(private_option_common       -std=c++1z)
 set(private_option_target       )
 set(private_option_host         )
 
